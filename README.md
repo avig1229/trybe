@@ -1,200 +1,245 @@
 # Trybe - Creative Community Platform
 
-**Trybe** is a unified full-stack digital platform designed to address the challenges of isolation, disorganized ideation, and limited collaborative support faced by creators during their iterative creative processes.
+**Trybe** is a full-stack digital platform designed to address the challenges of isolation, disorganized ideation, and limited collaborative support faced by creators during their iterative creative processes. Trybe fosters vibrant, supportive communities by providing intuitive tools for structured content organization and dynamic project sharing.
 
-## 🎯 Project Overview
+## 🎯 Core Features
 
-This is now a **single, cohesive codebase** that combines:
-- ✅ Complete Next.js frontend with all Trybe features
-- ✅ Supabase backend integration
-- ✅ Authentication system with multiple login methods
-- ✅ Project Valley, Collective Pulse, and Tribes functionality
-- ✅ File storage and media management
-- ✅ Responsive design and modern UI
+### 1. Project Valley - Immersive Idea Curation ✅ (Currently Implemented)
+- **Project Management**: Create, view, and delete creative projects
+- **Channel Organization**: Organize content within projects using flexible channels
+- **Status Tracking**: Track projects through planning, active, completed, and paused statuses
+- **Visual Organization**: Color-coded projects with intuitive filtering and search
 
-## 🚀 Quick Start
+### 2. Collective Pulse - Community Sharing (Planned)
+- **Progress Updates**: Share work-in-progress and solicit constructive feedback
+- **Showcase Posts**: Highlight completed work and creative achievements
+- **Collaboration Requests**: Find and connect with complementary creative partners
+- **Community Engagement**: Like, comment, and save posts from fellow creators
 
-### 1. Environment Setup
-Create a `.env.local` file in the root directory:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-NODE_ENV=development
-```
-
-### 2. Database Setup
-Run these SQL scripts in your Supabase SQL Editor:
-1. `enhanced-schema.sql` - Complete database schema
-2. `storage-setup.sql` - File storage configuration
-
-### 3. Install & Run
-```bash
-npm install
-npm run dev
-```
-
-### 4. Test Login
-Visit `http://localhost:3000/auth/login` to test authentication.
-
-## 📁 Unified Project Structure
-
-```
-trybe/                          # Root directory (unified codebase)
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── auth/              # Authentication pages
-│   │   │   ├── login/         # Login page
-│   │   │   ├── signup/        # Signup page
-│   │   │   └── callback/      # OAuth callback
-│   │   ├── valley/            # Main application
-│   │   └── api/               # API routes
-│   ├── components/            # React Components
-│   │   ├── ui/               # Base UI components
-│   │   ├── navigation.tsx    # Main navigation
-│   │   ├── dashboard.tsx     # Dashboard view
-│   │   ├── project-valley.tsx # Project management
-│   │   ├── collective-pulse.tsx # Community feed
-│   │   └── tribes.tsx        # Community management
-│   ├── contexts/             # React Contexts
-│   │   └── AuthContext.tsx   # Authentication context
-│   ├── lib/                  # Utilities
-│   │   ├── supabase/         # Supabase integration
-│   │   │   ├── client.ts     # Client-side Supabase
-│   │   │   ├── server.ts     # Server-side Supabase
-│   │   │   └── queries.ts    # Database queries
-│   │   └── utils.ts          # Helper functions
-│   └── types/                # TypeScript definitions
-│       └── index.ts          # All type definitions
-├── enhanced-schema.sql        # Database schema
-├── storage-setup.sql         # Storage configuration
-├── SETUP.md                  # Setup instructions
-└── README.md                 # This file
-```
-
-## 🔐 Authentication System
-
-The login system supports multiple authentication methods:
-
-### Email/Password Login
-- Traditional email and password authentication
-- Form validation and error handling
-- Secure password requirements
-
-### Google OAuth
-- One-click Google sign-in
-- Automatic profile creation
-- Seamless user experience
-
-### Magic Links
-- Passwordless authentication
-- Email-based login links
-- Enhanced security
-
-### Profile Management
-- Automatic profile creation on first login
-- Extended user profiles with creative information
-- Avatar and bio management
-
-## 🎨 Core Features
-
-### 1. Project Valley
-- **Visual Project Management**: Organize projects with color coding and status tracking
-- **Channels & Blocks**: Flexible content organization system
-- **Portfolio Integration**: Develop projects into portfolio-ready presentations
-- **Search & Filter**: Find projects by status, tags, or keywords
-
-### 2. Collective Pulse
-- **Progress Updates**: Share work-in-progress with the community
-- **Showcase Posts**: Highlight completed work and achievements
-- **Collaboration Requests**: Find and connect with creative partners
-- **Community Engagement**: Like, comment, and save posts
-
-### 3. Tribes
-- **Community Discovery**: Find specialized creative communities
-- **Tribe Creation**: Create and manage your own communities
-- **Membership Management**: Join/leave tribes with role-based access
-- **Exclusive Content**: Access tribe-specific resources and discussions
+### 3. Tribes - Specialized Communities (Planned)
+- **Micro-Communities**: Join niche communities united by shared interests and methodologies
+- **Creator-Led**: Tribes are created and managed by community members
+- **Structured Guidelines**: Each tribe can establish its own rules and culture
+- **Exclusive Content**: Access to tribe-specific resources and discussions
 
 ## 🛠 Technology Stack
 
 - **Frontend**: Next.js 15 with TypeScript and Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth + Storage + Real-time)
 - **UI Components**: Radix UI primitives with custom styling
-- **State Management**: React Query for server state
+- **State Management**: React Context API
 - **Authentication**: Supabase Auth with profile management
-- **File Storage**: Supabase Storage with RLS policies
-- **Database**: PostgreSQL with comprehensive RLS security
+- **Database**: PostgreSQL with Row Level Security (RLS)
 
-## 📱 User Experience
+## 🚀 Getting Started
 
-### Navigation Flow
-1. **Landing Page** → Authentication
-2. **Dashboard** → Personalized overview and quick actions
-3. **Project Valley** → Organize and manage creative projects
-4. **Collective Pulse** → Engage with the community
-5. **Tribes** → Discover and join specialized communities
+### Prerequisites
+- Node.js 18+ and npm
+- Supabase account and project
+- Git
 
-### Key UX Features
-- **Responsive Design**: Works seamlessly across all devices
-- **Real-time Updates**: Live community interactions
-- **Drag & Drop**: Intuitive file and content organization
-- **Search & Filter**: Powerful discovery tools
-- **Progressive Enhancement**: Core functionality without JavaScript
+### Step 1: Clone and Install
 
-## 🔄 Development Workflow
+```bash
+git clone https://github.com/your-username/trybe.git
+cd trybe
+npm install
+```
 
-### Available Scripts
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking
+### Step 2: Set Up Supabase
 
-### Key Development Files
-- `src/types/index.ts` - Comprehensive TypeScript definitions
-- `src/lib/supabase/queries.ts` - Database query functions
-- `src/contexts/AuthContext.tsx` - Authentication and profile management
-- `enhanced-schema.sql` - Complete database schema
-- `storage-setup.sql` - File storage configuration
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 
-## 🚀 Deployment
+2. **Assert environment**
+   - Create `.env.local` in the project root.
+   - Add:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
-### Vercel (Recommended)
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+3. **Initialize database**
+   - Open Supabase SQL Editor.
+   - Run:
+     - `enhanced-schema.sql`
+     - `storage-setup.sql`
 
-### Manual Deployment
-1. Build: `npm run build`
-2. Start: `npm start`
-3. Configure your hosting platform
+4. **Verify tables**
+   - Confirm `profiles`, `projects`, `channels`, `blocks` exist.
+
+### Step 3: Run Development Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Step 4: Test the Application
+
+1. **Sign Up**: Create an account at `/auth/signup`
+2. **Login**: Sign in at `/auth/login`
+3. **Create Project**: Click "New Project" in Project Valley
+4. **View Project**: Click any project to open detail view
+5. **Manage Channels**: Create and delete channels on the project detail page
+6. **Delete Project**: Use the trash icon on any project card
+
+## 📁 Project Structure
+
+```
+trybe/
+├── src/
+│   ├── app/
+│   │   ├── auth/              # Authentication pages (login, signup)
+│   │   ├── valley/            # Main application pages
+│   │   │   └── [projectId]/   # Individual project detail page
+│   │   └── api/               # API routes
+│   ├── components/
+│   │   ├── ui/               # Base UI components (Button, Card, etc.)
+│   │   ├── navigation.tsx    # Main app navigation
+│   │   ├── project-valley.tsx # Project Valley view
+│   │   └── ...               # Other feature components
+│   ├── contexts/
+│   │   └── AuthContext.tsx   # Authentication state management
+│   ├── lib/
+│   │   └── supabase/
+│   │       ├── client.ts     # Supabase client setup
+│   │       ├── server.ts     # Server-side Supite client
+│   │       └── queries.ts    # Database query functions
+│   └── types/
+│       └── index.ts          # TypeScript type definitions
+├── enhanced-schema.sql        # Complete database schema
+├── storage-setup.sql         # File storage configuration
+└── README.md                 # This file
+```
+
+## 🔐 Authentication
+
+The app uses Supabase Auth with multiple authentication methods:
+
+- **Email/Password**: Traditional login and signup
+- **Magic Links**: Passwordless email authentication
+- **Google OAuth**: One-click social login (optional)
+
+### Profile Management
+
+- Automatic profile creation on first login
+- Extends Supabase auth users with creative information
+- Stored in `profiles` with RLS
+
+## 💾 Database Schema
+
+### Core Tables
+
+- **profiles**: Extended user profiles
+- **projects**: Creative projects with status and visibility
+- **channels**: Organization units within projects
+- **blocks**: Individual resources (images, links, text, files)
+- **posts**: Community updates (not yet implemented)
+- **tribes**: Community groups (not yet implemented)
+
+### Row Level Security (RLS)
+
+- Users can read and write their own data
+- Public projects readable by everyone
+- Private projects restricted to the owner
+- RLS policies enforced at the database level
+
+## 🎨 Current Implementation
+
+### ✅ Completed Features
+
+- **Authentication System**
+  - Login/Signup with email and password
+  - Profile creation and management
+  - Protected routes and session handling
+
+- **Project Valley**
+  - Create, view, and delete projects
+  - Project filtering by status
+  - Search functionality
+  - Loading states and error handling
+  - Responsive grid and list views
+
+- **Project Management**
+  - Individual project detail pages
+  - Channel creation and deletion
+  - Project organization structure
+
+### 🚧 In Progress
+
+- Block management (add content to channels)
+- File upload and storage
+- Project editing capabilities
+
+### 📋 Planned Features
+
+- **Collective Pulse**: Community feed and engagement
+- **Tribes**: Specialized community spaces
+- Advanced collaboration features
+- Real-time updates and notifications
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+
+1. **Authentication**
+   - Sign up a new account
+   - Login with credentials
+   - Verify profile is created
+   - Test protected route access
+
+2. **Projects**
+   - Create a new project
+   - View project details
+   - Delete a project
+   - Verify persistence on refresh
+
+3. **Channels**
+   - Create channels within a project
+   - Delete channels
+   - Verify cascade behavior
+
+4. **UI/UX**
+   - Test responsive design on mobile
+   - Verify loading states
+   - Check empty states
+   - Test search and filter functionality
 
 ## 🐛 Troubleshooting
 
-### Login Issues
-1. Verify Supabase URL and anon key in `.env.local`
-2. Ensure database schema has been applied
-3. Check RLS policies are properly configured
-4. Review browser console for errors
+### Common Issues
 
-### Database Issues
-1. Run SQL scripts in correct order
-2. Verify all tables and policies exist
-3. Check Supabase logs for errors
+**"Error fetching projects"**
+- Ensure database tables are created
+- Check RLS policies are configured
+- Verify Supabase credentials in `.env.local`
 
-### Build Issues
-1. Run `npm install` to ensure dependencies
-2. Check TypeScript errors with `npm run type-check`
-3. Verify all imports are correct
+**"Error creating project"**
+- Confirm `projects` table exists
+- Check RLS policies allow INSERT for authenticated users
+- Verify `user_id` is being passed correctly
+
+**Login not working**
+- Ensure Supabase Auth is enabled
+- Check email/password provider is configured
+- Verify redirect URLs in Supabase settings
+
+**Profile creation fails**
+- Check `profiles` table and policies
+- Verify the trigger script has been run
+- Check browser console for specific error messages
+
+### Getting Help
+
+- Check Supabase logs in the dashboard
+- Review browser console for client-side errors
+- Verify all SQL scripts have been run successfully
+- Ensure all environment variables are set correctly
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+This is a capstone project currently in development. For questions or collaboration opportunities, please contact the project maintainer.
 
 ## 📝 License
 
@@ -204,10 +249,10 @@ This project is licensed under the MIT License.
 
 - **Capstone Project**: Developed as part of a university capstone program
 - **Community Focus**: Inspired by the need for better creative collaboration tools
-- **Open Source**: Built with love for the creative community
+- **Built with**: Next.js, Supabase, and modern web technologies
 
 ---
 
 **Trybe** - Cultivating Collaborative Flow & Creative Belonging 🎨✨
 
-*Now a unified, cohesive codebase ready for development and testing!*
+*Status: Project Valley in active development*
