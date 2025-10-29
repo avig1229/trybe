@@ -19,6 +19,21 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return (data as unknown as Profile) ?? null
 }
 
+export async function getProfileByUsername(username: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('username', username)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error fetching profile by username:', error?.message || error)
+    return null
+  }
+
+  return (data as unknown as Profile) ?? null
+}
+
 export async function createProfile(profile: Partial<Profile>): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
@@ -35,11 +50,26 @@ export async function createProfile(profile: Partial<Profile>): Promise<Profile 
 }
 
 export async function updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile | null> {
+  // Map camelCase fields to snake_case DB columns
+  const payload: Record<string, unknown> = {}
+  if (updates.username !== undefined) payload.username = updates.username
+  if ((updates as any).full_name !== undefined) payload.full_name = (updates as any).full_name
+  if (updates.fullName !== undefined) payload.full_name = updates.fullName
+  if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
+  if (updates.bio !== undefined) payload.bio = updates.bio
+  if (updates.location !== undefined) payload.location = updates.location
+  if (updates.website !== undefined) payload.website = updates.website
+  if (updates.skills !== undefined) payload.skills = updates.skills
+  if (updates.creativePhilosophy !== undefined) payload.creative_philosophy = updates.creativePhilosophy
+  if ((updates as any).looking_for_collaboration !== undefined) payload.looking_for_collaboration = (updates as any).looking_for_collaboration
+  if (updates.lookingForCollaboration !== undefined) payload.looking_for_collaboration = updates.lookingForCollaboration
+  if (updates.portfolioUrl !== undefined) payload.portfolio_url = updates.portfolioUrl
+
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(payload)
     .eq('id', userId)
-    .select()
+    .select('*')
     .single()
 
   if (error) {
@@ -48,6 +78,54 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   }
 
   return data as Profile
+}
+
+// Helpers to map between DB snake_case and app camelCase
+type DbProject = {
+  id: string
+  user_id: string
+  name: string
+  description?: string | null
+  color?: string | null
+  status: Project['status']
+  is_public: boolean
+  tags?: string[] | null
+  cover_image_url?: string | null
+  tribe_id?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+function mapProjectFromDb(row: DbProject): Project {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    description: row.description ?? '',
+    color: row.color ?? 'bg-neutral-900',
+    status: row.status,
+    isPublic: row.is_public,
+    tags: row.tags ?? [],
+    coverImageUrl: row.cover_image_url ?? undefined,
+    tribeId: row.tribe_id ?? undefined,
+    createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+    updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
+  }
+}
+
+function mapProjectToDb(p: Partial<Project>): Partial<DbProject> {
+  return {
+    ...(p.id ? { id: p.id } : {}),
+    ...(p.userId ? { user_id: p.userId } : {}),
+    ...(p.name !== undefined ? { name: p.name } : {}),
+    ...(p.description !== undefined ? { description: p.description } : {}),
+    ...(p.color !== undefined ? { color: p.color } : {}),
+    ...(p.status !== undefined ? { status: p.status } : {}),
+    ...(p.isPublic !== undefined ? { is_public: p.isPublic } : {}),
+    ...(p.tags !== undefined ? { tags: p.tags } : {}),
+    ...(p.coverImageUrl !== undefined ? { cover_image_url: p.coverImageUrl } : {}),
+    ...(p.tribeId !== undefined ? { tribe_id: p.tribeId } : {}),
+  }
 }
 
 // Project queries
@@ -64,13 +142,13 @@ export async function getProjects(userId?: string): Promise<Project[]> {
     return []
   }
 
-  return (data || []) as unknown as Project[]
+  return ((data || []) as DbProject[]).map(mapProjectFromDb)
 }
 
 export async function createProject(project: Partial<Project>): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .insert(project)
+    .insert(mapProjectToDb(project))
     .select('*')
     .single()
 
@@ -79,19 +157,15 @@ export async function createProject(project: Partial<Project>): Promise<Project 
     return null
   }
 
-  return data as unknown as Project
+  return mapProjectFromDb(data)
 }
 
 export async function updateProject(projectId: string, updates: Partial<Project>): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .update(updates)
+    .update(mapProjectToDb(updates))
     .eq('id', projectId)
-    .select(`
-      *,
-      user:profiles(*),
-      tribe:tribes(*)
-    `)
+    .select('*')
     .single()
 
   if (error) {
@@ -99,7 +173,7 @@ export async function updateProject(projectId: string, updates: Partial<Project>
     return null
   }
 
-  return data as Project
+  return mapProjectFromDb(data)
 }
 
 export async function deleteProject(projectId: string): Promise<boolean> {

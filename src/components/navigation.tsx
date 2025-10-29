@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -17,7 +17,9 @@ import {
   Plus,
   User,
   LogOut,
-  Settings
+  Settings,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { View } from '@/types'
@@ -28,8 +30,9 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentView, onViewChange }: NavigationProps) {
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth() as any
   const pathname = usePathname()
+  const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const navigationItems = [
@@ -47,6 +50,22 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
       console.error('Sign out error:', error)
     }
   }
+
+  const toggleTheme = () => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    const isDark = root.classList.contains('dark')
+    root.classList.toggle('dark', !isDark)
+    localStorage.setItem('theme', !isDark ? 'dark' : 'light')
+  }
+
+  // Hydrate theme on mount (client only) to avoid SSR mismatch
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+    const prefersDark = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
+    const shouldDark = stored ? stored === 'dark' : prefersDark
+    document.documentElement.classList.toggle('dark', shouldDark)
+  }, [])
 
   return (
     <nav className="border-b border-border bg-card">
@@ -95,6 +114,12 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
               <Search className="h-4 w-4" />
             </Button>
 
+            {/* Theme Toggle */}
+            <Button variant="ghost" size="sm" onClick={toggleTheme}>
+              <Sun className="h-4 w-4 hidden dark:inline" />
+              <Moon className="h-4 w-4 dark:hidden" />
+            </Button>
+
             {/* Create Button */}
             <Button size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
@@ -141,7 +166,11 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                       variant="ghost" 
                       size="sm" 
                       className="w-full justify-start gap-2"
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        const uname = profile?.username || user?.email?.split('@')[0] || user?.id
+                        router.push(`/u/${uname}`)
+                      }}
                     >
                       <User className="h-4 w-4" />
                       Profile

@@ -6,12 +6,15 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
 import { ProjectValley } from '@/components/project-valley'
+import ProjectDashboard from '@/components/ProjectDashboard'
+import ProjectList from '@/components/ProjectList'
 import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
 import { Loader2 } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
 import { getProjects, createProject, deleteProject } from '@/lib/supabase/queries'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +28,9 @@ export default function ValleyPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [tribes, setTribes] = useState<Tribe[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(320)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true)
   const [projectsError, setProjectsError] = useState<string>('')
 
@@ -43,6 +49,9 @@ export default function ValleyPage() {
       try {
         const data = await getProjects(user.id)
         setProjects(data)
+        if (!selectedProjectId && data.length > 0) {
+          setSelectedProjectId(data[0].id)
+        }
       } catch (e) {
         setProjectsError('Failed to load projects')
       } finally {
@@ -89,7 +98,7 @@ export default function ValleyPage() {
         },
       ])
     }
-  }, [user, profile])
+  }, [user?.id, profile?.id]) // Only depend on IDs to prevent unnecessary re-renders
 
   const handleCreateProject = () => {
     setShowCreate(true)
@@ -102,26 +111,36 @@ export default function ValleyPage() {
 
   const handleDeleteProject = (projectId: string) => {
     // Optimistic UI delete
-    const prev = projects
-    setProjects(prev.filter(p => p.id !== projectId))
-    deleteProject(projectId).catch(() => setProjects(prev))
+    const next = projects.filter(p => p.id !== projectId)
+    setProjects(next)
+    // If deleting the selected project, select the first remaining (if any)
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(next.length ? next[0].id : null)
+    }
+    deleteProject(projectId).catch(() => {
+      // rollback
+      setProjects(projects)
+      if (selectedProjectId === projectId) {
+        setSelectedProjectId(projectId)
+      }
+    })
   }
 
   const handleViewProject = (project: Project) => {
-    router.push(`/valley/${project.id}`)
+    setSelectedProjectId(project.id)
   }
 
   const submitCreate = async () => {
     if (!user || !newName.trim()) return
     setCreating(true)
     const created = await createProject({
-      user_id: user.id as unknown as string,
+      userId: user.id,
       name: newName.trim(),
-      description: newDescription || null,
-      is_public: newIsPublic,
+      description: newDescription || '',
+      isPublic: newIsPublic,
       status: 'planning',
       color: 'bg-neutral-900',
-    } as unknown as Project)
+    })
     setCreating(false)
     if (created) {
       setProjects(prev => [created, ...prev])
@@ -223,16 +242,78 @@ export default function ValleyPage() {
         )
       case 'valley':
         return (
-          <>
-            <ProjectValley
-              projects={projects}
-              onCreateProject={handleCreateProject}
-              onEditProject={handleEditProject}
-              onDeleteProject={handleDeleteProject}
-              onViewProject={handleViewProject}
-              loading={loadingProjects}
-              error={projectsError}
-            />
+          <div className="min-h-[70vh] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+            <div style={{ width: sidebarCollapsed ? 56 : sidebarWidth }} className="transition-[width] overflow-hidden relative">
+              <div className="flex items-center justify-between mb-3">
+                {!sidebarCollapsed ? (
+                  <>
+                    <h3 className="text-sm font-semibold">Projects</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setSidebarCollapsed(true)}>
+                      Collapse
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => setSidebarCollapsed(false)}>
+                    Expand
+                  </Button>
+                )}
+              </div>
+              <ProjectList
+                projects={projects}
+                selectedProjectId={selectedProjectId}
+                onSelect={handleViewProject}
+                onCreate={handleCreateProject}
+                onDelete={handleDeleteProject}
+              />
+              {/* Resize handle */}
+              {!sidebarCollapsed && (
+                <div
+                  onMouseDown={(e) => {
+                    const startX = e.clientX
+                    const startW = sidebarWidth
+                    const onMove = (ev: MouseEvent) => {
+                      const delta = ev.clientX - startX
+                      const next = Math.min(500, Math.max(220, startW + delta))
+                      setSidebarWidth(next)
+                    }
+                    const onUp = () => {
+                      window.removeEventListener('mousemove', onMove)
+                      window.removeEventListener('mouseup', onUp)
+                    }
+                    window.addEventListener('mousemove', onMove)
+                    window.addEventListener('mouseup', onUp)
+                  }}
+                  className="w-1 cursor-col-resize bg-transparent hover:bg-muted rounded-full h-full absolute right-0 top-0"
+                />
+              )}
+              {sidebarCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarCollapsed(false)}
+                  className="absolute -right-10 top-2"
+                >
+                  Expand
+                </Button>
+              )}
+            </div>
+            <div>
+              {selectedProjectId && projects.find(p => p.id === selectedProjectId) ? (
+                <ProjectDashboard
+                  project={projects.find(p => p.id === selectedProjectId)}
+                  onProjectUpdated={(p) => {
+                    setProjects(prev => prev.map(x => x.id === p.id ? p : x))
+                  }}
+                />
+              ) : (
+                <Card className="p-8">
+                  <CardHeader>
+                    <CardTitle>Select a project to view its dashboard</CardTitle>
+                  </CardHeader>
+                </Card>
+              )}
+            </div>
+
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
               <DialogContent>
                 <DialogHeader>
@@ -259,7 +340,7 @@ export default function ValleyPage() {
                 </div>
               </DialogContent>
             </Dialog>
-          </>
+          </div>
         )
       case 'pulse':
         return (
