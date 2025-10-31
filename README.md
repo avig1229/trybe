@@ -1,6 +1,6 @@
 # Trybe
 
-A platform for creators to organize ideas, build in public, and find momentum together. Project Valley is live; Collective Pulse and Tribes are on the way.
+A platform for creators to organize ideas, build in public, and find momentum together. Project Valley is built and can be run locally for testing; Collective Pulse is going to be the next phase of app dev; the tribe function will be the reach goal for the coming semester.
 
 ## Core features
 
@@ -119,13 +119,13 @@ The app uses Supabase Auth with multiple authentication methods:
 
 - **Email/Password**: Traditional login and signup
 - **Magic Links**: Passwordless email authentication
-- **Google OAuth**: One-click social login (optional)
+- **Google OAuth**: One-click social login (will be implemented after this round of check-in)
 
 ### Profile Management
 
 - Automatic profile creation on first login
 - Extends Supabase auth users with creative information
-- Stored in `profiles` with RLS
+- Stored in `profiles` within Supabase
 
 ## Database
 
@@ -133,17 +133,16 @@ The app uses Supabase Auth with multiple authentication methods:
 
 - **profiles**: Extended user profiles
 - **projects**: Creative projects with status and visibility
-- **channels**: Organization units within projects
+- **channels**: Organization units within projects (not yet utilized in the frontend)
 - **blocks**: Individual resources (images, links, text, files)
-- **posts**: Community updates (not yet implemented)
-- **tribes**: Community groups (not yet implemented)
+- **posts**: Community updates (not yet implemented, next iteration goal)
+- **tribes**: Community groups (not yet implemented, project reach goal)
 
 ### Row Level Security (RLS)
 
 - Users can read and write their own data
 - Public projects readable by everyone
 - Private projects restricted to the owner
-- RLS policies enforced at the database level
 
 ## Current status
 
@@ -154,7 +153,7 @@ The app uses Supabase Auth with multiple authentication methods:
   - Profile creation and management
   - Protected routes and session handling
 
-- **Project Valley**
+- **Project Valley Pt.1**
   - Create, view, and delete projects
   - Project filtering by status
   - Search functionality
@@ -168,15 +167,13 @@ The app uses Supabase Auth with multiple authentication methods:
 
 ### In progress
 
-- Block management (add content to channels)
+- Block management (add content to channels to the project valley)
 - File upload and storage
-- Project editing capabilities
 
 ### Up next
 
-- **Collective Pulse**: Community feed and engagement
-- **Tribes**: Specialized community spaces
-- Advanced collaboration features
+- **Collective Pulse/ Post**: Community feed and engagement
+- **Tribes**: Specialized community spaces, will be the reach goal for the coming sem
 - Real-time updates and notifications
 
 ## Testing
@@ -195,12 +192,7 @@ The app uses Supabase Auth with multiple authentication methods:
    - Delete a project
    - Verify persistence on refresh
 
-3. **Channels**
-   - Create channels within a project
-   - Delete channels
-   - Verify cascade behavior
-
-4. **UI/UX**
+3. **UI/UX**
    - Test responsive design on mobile
    - Verify loading states
    - Check empty states
@@ -209,11 +201,6 @@ The app uses Supabase Auth with multiple authentication methods:
 ## Troubleshooting
 
 ### Common Issues
-
-**"Error fetching projects"**
-- Ensure database tables are created
-- Check RLS policies are configured
-- Verify Supabase credentials in `.env.local`
 
 **"Error creating project"**
 - Confirm `projects` table exists
@@ -224,18 +211,6 @@ The app uses Supabase Auth with multiple authentication methods:
 - Ensure Supabase Auth is enabled
 - Check email/password provider is configured
 - Verify redirect URLs in Supabase settings
-
-**Profile creation fails**
-- Check `profiles` table and policies
-- Verify the trigger script has been run
-- Check browser console for specific error messages
-
-### Getting Help
-
-- Check Supabase logs in the dashboard
-- Review browser console for client-side errors
-- Verify all SQL scripts have been run successfully
-- Ensure all environment variables are set correctly
 
 ---
 
