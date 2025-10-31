@@ -1,5 +1,5 @@
 import { createClient } from './client'
-import { Profile, Project, Tribe, Post, Block, Channel, Comment, Like, CollaborationRequest } from '@/types'
+import { Profile, Project, Tribe, Post, Block, Channel } from '@/types'
 
 const supabase = createClient()
 
@@ -53,7 +53,10 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   // Map camelCase fields to snake_case DB columns
   const payload: Record<string, unknown> = {}
   if (updates.username !== undefined) payload.username = updates.username
-  if ((updates as any).full_name !== undefined) payload.full_name = (updates as any).full_name
+  const rawUpdates = updates as unknown as Record<string, unknown>
+  if (Object.prototype.hasOwnProperty.call(rawUpdates, 'full_name')) {
+    payload.full_name = rawUpdates.full_name
+  }
   if (updates.fullName !== undefined) payload.full_name = updates.fullName
   if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
   if (updates.bio !== undefined) payload.bio = updates.bio
@@ -61,7 +64,9 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   if (updates.website !== undefined) payload.website = updates.website
   if (updates.skills !== undefined) payload.skills = updates.skills
   if (updates.creativePhilosophy !== undefined) payload.creative_philosophy = updates.creativePhilosophy
-  if ((updates as any).looking_for_collaboration !== undefined) payload.looking_for_collaboration = (updates as any).looking_for_collaboration
+  if (Object.prototype.hasOwnProperty.call(rawUpdates, 'looking_for_collaboration')) {
+    payload.looking_for_collaboration = rawUpdates.looking_for_collaboration
+  }
   if (updates.lookingForCollaboration !== undefined) payload.looking_for_collaboration = updates.lookingForCollaboration
   if (updates.portfolioUrl !== undefined) payload.portfolio_url = updates.portfolioUrl
 

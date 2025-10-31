@@ -38,8 +38,6 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
   const navigationItems = [
     { id: 'dashboard' as View, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'valley' as View, label: 'Project Valley', icon: Mountain },
-    { id: 'pulse' as View, label: 'Collective Pulse', icon: Heart },
-    { id: 'tribes' as View, label: 'Tribes', icon: Users },
   ]
 
   const handleSignOut = async () => {
@@ -158,7 +156,7 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                 <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50">
                   <div className="py-1">
                     <div className="px-4 py-2 border-b border-border">
-                      <p className="text-sm font-medium">{user?.email}</p>
+                      <p className="text-sm font-medium">{profile?.username || user?.email}</p>
                       <p className="text-xs text-muted-foreground">Creator</p>
                     </div>
                     

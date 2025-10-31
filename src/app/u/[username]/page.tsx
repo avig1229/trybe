@@ -76,8 +76,15 @@ export default function UserProfilePage() {
       portfolioUrl: form.portfolioUrl,
       skills: form.skills || [],
       lookingForCollaboration: !!form.lookingForCollaboration,
+      username: form.username,
     } as Profile)
-    if (updated) setProfile(updated)
+    if (updated) {
+      setProfile(updated)
+      // If username changed, update the URL to the new profile path
+      if (updated.username && updated.username !== username) {
+        router.replace(`/u/${updated.username}`)
+      }
+    }
   }
 
   const renderEmbeds = () => {

@@ -1,28 +1,28 @@
-# Trybe - Creative Community Platform
+# Trybe
 
-**Trybe** is a full-stack digital platform designed to address the challenges of isolation, disorganized ideation, and limited collaborative support faced by creators during their iterative creative processes. Trybe fosters vibrant, supportive communities by providing intuitive tools for structured content organization and dynamic project sharing.
+A platform for creators to organize ideas, build in public, and find momentum together. Project Valley is live; Collective Pulse and Tribes are on the way.
 
-## 🎯 Core Features
+## Core features
 
-### 1. Project Valley - Immersive Idea Curation ✅ (Currently Implemented)
+### Project Valley (implemented)
 - **Project Management**: Create, view, and delete creative projects
 - **Channel Organization**: Organize content within projects using flexible channels
 - **Status Tracking**: Track projects through planning, active, completed, and paused statuses
 - **Visual Organization**: Color-coded projects with intuitive filtering and search
 
-### 2. Collective Pulse - Community Sharing (Planned)
+### Collective Pulse (planned)
 - **Progress Updates**: Share work-in-progress and solicit constructive feedback
 - **Showcase Posts**: Highlight completed work and creative achievements
 - **Collaboration Requests**: Find and connect with complementary creative partners
 - **Community Engagement**: Like, comment, and save posts from fellow creators
 
-### 3. Tribes - Specialized Communities (Planned)
+### Tribes (planned)
 - **Micro-Communities**: Join niche communities united by shared interests and methodologies
 - **Creator-Led**: Tribes are created and managed by community members
 - **Structured Guidelines**: Each tribe can establish its own rules and culture
 - **Exclusive Content**: Access to tribe-specific resources and discussions
 
-## 🛠 Technology Stack
+## Tech stack
 
 - **Frontend**: Next.js 15 with TypeScript and Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth + Storage + Real-time)
@@ -31,7 +31,7 @@
 - **Authentication**: Supabase Auth with profile management
 - **Database**: PostgreSQL with Row Level Security (RLS)
 
-## 🚀 Getting Started
+## Getting started
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -50,7 +50,7 @@ npm install
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 
-2. **Assert environment**
+2. **Configure environment**
    - Create `.env.local` in the project root.
    - Add:
    ```env
@@ -84,7 +84,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 5. **Manage Channels**: Create and delete channels on the project detail page
 6. **Delete Project**: Use the trash icon on any project card
 
-## 📁 Project Structure
+## Project structure
 
 ```
 trybe/
@@ -104,7 +104,7 @@ trybe/
 │   ├── lib/
 │   │   └── supabase/
 │   │       ├── client.ts     # Supabase client setup
-│   │       ├── server.ts     # Server-side Supite client
+│   │       ├── server.ts     # Server-side Supabase client
 │   │       └── queries.ts    # Database query functions
 │   └── types/
 │       └── index.ts          # TypeScript type definitions
@@ -113,7 +113,7 @@ trybe/
 └── README.md                 # This file
 ```
 
-## 🔐 Authentication
+## Authentication
 
 The app uses Supabase Auth with multiple authentication methods:
 
@@ -127,7 +127,7 @@ The app uses Supabase Auth with multiple authentication methods:
 - Extends Supabase auth users with creative information
 - Stored in `profiles` with RLS
 
-## 💾 Database Schema
+## Database
 
 ### Core Tables
 
@@ -145,9 +145,9 @@ The app uses Supabase Auth with multiple authentication methods:
 - Private projects restricted to the owner
 - RLS policies enforced at the database level
 
-## 🎨 Current Implementation
+## Current status
 
-### ✅ Completed Features
+### Done
 
 - **Authentication System**
   - Login/Signup with email and password
@@ -166,20 +166,20 @@ The app uses Supabase Auth with multiple authentication methods:
   - Channel creation and deletion
   - Project organization structure
 
-### 🚧 In Progress
+### In progress
 
 - Block management (add content to channels)
 - File upload and storage
 - Project editing capabilities
 
-### 📋 Planned Features
+### Up next
 
 - **Collective Pulse**: Community feed and engagement
 - **Tribes**: Specialized community spaces
 - Advanced collaboration features
 - Real-time updates and notifications
 
-## 🧪 Testing
+## Testing
 
 ### Manual Testing Checklist
 
@@ -206,7 +206,7 @@ The app uses Supabase Auth with multiple authentication methods:
    - Check empty states
    - Test search and filter functionality
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -237,22 +237,6 @@ The app uses Supabase Auth with multiple authentication methods:
 - Verify all SQL scripts have been run successfully
 - Ensure all environment variables are set correctly
 
-## 🤝 Contributing
-
-This is a capstone project currently in development. For questions or collaboration opportunities, please contact the project maintainer.
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- **Capstone Project**: Developed as part of a university capstone program
-- **Community Focus**: Inspired by the need for better creative collaboration tools
-- **Built with**: Next.js, Supabase, and modern web technologies
-
 ---
 
-**Trybe** - Cultivating Collaborative Flow & Creative Belonging 🎨✨
-
-*Status: Project Valley in active development*
+Trybe — cultivating collaborative flow and creative belonging.
