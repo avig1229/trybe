@@ -30,7 +30,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentView, onViewChange }: NavigationProps) {
-  const { user, profile, signOut } = useAuth() as any
+  const { user, profile, signOut } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
