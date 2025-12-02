@@ -1,13 +1,13 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Video, Target, Plus } from 'lucide-react'
+import { FileText, Video, Target, Plus, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Project, Channel, Block, ProjectStatus } from '@/types'
-import { getChannels, getBlocks, updateProject } from '@/lib/supabase/queries'
+import { Project, Channel, Block, ProjectStatus, Post } from '@/types'
+import { getChannels, getBlocks, updateProject, getPosts } from '@/lib/supabase/queries'
+import { ResourceUploadModal } from './upload/ResourceUploadModal'
+import { ProgressUploadModal } from './upload/ProgressUploadModal'
 
 type Tab = 'overview' | 'resources' | 'progress'
 
@@ -15,6 +15,8 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [channels, setChannels] = useState<Channel[]>([])
   const [blocks, setBlocks] = useState<Block[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [playingVideo, setPlayingVideo] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? 'planning')
   const statusClass = (s: ProjectStatus) => {
@@ -31,17 +33,22 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     if (project) setStatus(project.status)
   }, [project?.id, project?.status])
 
+  const loadData = async () => {
+    if (!project?.id) return
+    setLoading(true)
+    const [chans, projectPosts] = await Promise.all([
+      getChannels(project.id),
+      getPosts(20, 0, project.id)
+    ])
+    setChannels(chans)
+    setPosts(projectPosts)
+    const allBlocks = await Promise.all(chans.map((c) => getBlocks(c.id)))
+    setBlocks(allBlocks.flat())
+    setLoading(false)
+  }
+
   useEffect(() => {
-    const load = async () => {
-      if (!project?.id) return
-      setLoading(true)
-      const chans = await getChannels(project.id)
-      setChannels(chans)
-      const allBlocks = await Promise.all(chans.map((c) => getBlocks(c.id)))
-      setBlocks(allBlocks.flat())
-      setLoading(false)
-    }
-    load()
+    loadData()
   }, [project?.id])
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -53,13 +60,16 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   }
 
   const totalResources = blocks.length
-  const progressUpdates = 0
+  const progressUpdates = posts.length
   if (!project) return null
 
   const createdAt = project.createdAt instanceof Date ? project.createdAt : new Date(project.createdAt)
   const daysActive = isNaN(createdAt.getTime())
     ? 0
     : Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+
+  // Get default channel for uploads (first one or create one if needed - assuming first one exists for now)
+  const defaultChannelId = channels.length > 0 ? channels[0].id : ''
 
   return (
     <div className="space-y-6">
@@ -74,7 +84,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
               onChange={handleStatusChange}
               className="text-xs border rounded px-2 py-1 capitalize bg-background"
             >
-              {(['planning','active','completed','paused'] as const).map(s => (
+              {(['planning', 'active', 'completed', 'paused'] as const).map(s => (
                 <option key={s} value={s} className="capitalize">{s}</option>
               ))}
             </select>
@@ -108,6 +118,9 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
               {t.label}
               {t.id === 'resources' && (
                 <span className="px-1.5 py-0.5 bg-muted rounded text-xs">{totalResources}</span>
+              )}
+              {t.id === 'progress' && (
+                <span className="px-1.5 py-0.5 bg-muted rounded text-xs">{progressUpdates}</span>
               )}
             </button>
           )
@@ -152,7 +165,32 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
               <CardTitle className="text-base">Recent Progress</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">No recent updates</div>
+              {posts.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No recent updates</div>
+              ) : (
+                <div className="space-y-4">
+                  {posts.slice(0, 3).map((post) => (
+                    <div key={post.id} className="flex gap-4 items-start pb-4 border-b last:border-0 last:pb-0">
+                      {post.thumbnailUrl ? (
+                        <div className="w-24 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-24 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                          <Video className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-medium text-sm">{post.title || 'Untitled Update'}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{post.content}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -162,10 +200,14 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold">Project Resources</h3>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Resource
-            </Button>
+            {defaultChannelId && (
+              <ResourceUploadModal
+                projectId={project.id}
+                channelId={defaultChannelId}
+                userId={project.userId}
+                onSuccess={loadData}
+              />
+            )}
           </div>
           {blocks.length === 0 ? (
             <Card>
@@ -195,16 +237,83 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold">Progress Updates</h3>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              New Update
-            </Button>
+            <ProgressUploadModal
+              projectId={project.id}
+              userId={project.userId}
+              onSuccess={loadData}
+            />
           </div>
-          <Card>
-            <CardContent className="py-10 text-center">
-              <div className="text-sm text-muted-foreground">No progress updates yet</div>
-            </CardContent>
-          </Card>
+          {posts.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <div className="text-sm text-muted-foreground">No progress updates yet</div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {posts.map((post) => (
+                <Card key={post.id} className="overflow-hidden">
+                  {post.mediaUrl && (
+                    <div className="aspect-video bg-muted relative group">
+                      {post.mediaType === 'video' ? (
+                        playingVideo === post.id ? (
+                          <video
+                            src={post.mediaUrl}
+                            controls
+                            autoPlay
+                            className="w-full h-full object-contain bg-black"
+                          />
+                        ) : (
+                          <button
+                            onClick={() => setPlayingVideo(post.id)}
+                            className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors cursor-pointer"
+                          >
+                            <div className="w-12 h-12 rounded-full bg-background/90 flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                              <Play className="h-5 w-5 fill-current ml-0.5" />
+                            </div>
+                          </button>
+                        )
+                      ) : post.mediaType === 'image' ? (
+                        <img src={post.mediaUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-muted-foreground p-4 text-center">
+                          <FileText className="h-12 w-12 mb-2 opacity-50" />
+                          <span className="text-xs font-medium truncate max-w-[200px]">
+                            {post.mediaUrl.split('/').pop()}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => window.open(post.mediaUrl, '_blank')}
+                          >
+                            View File
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-semibold">{post.title || 'Untitled Update'}</h4>
+                      <ProgressUploadModal
+                        projectId={project.id}
+                        userId={project.userId}
+                        post={post}
+                        onSuccess={loadData}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-3">{post.content}</p>
+                    <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span>{post.likeCount || 0} likes</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

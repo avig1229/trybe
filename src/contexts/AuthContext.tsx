@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Re-fetch after creation
         userProfile = await getProfile(userId)
       }
-      
+
       setProfile(userProfile)
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -60,11 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
-      
+
       if (session?.user) {
         await loadProfile(session.user.id)
       }
-      
+
       setLoading(false)
     }
 
@@ -74,13 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null)
-        
+
         if (session?.user) {
           await loadProfile(session.user.id)
         } else {
           setProfile(null)
         }
-        
+
         setLoading(false)
       }
     )

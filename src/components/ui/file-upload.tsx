@@ -3,12 +3,12 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Upload, 
-  X, 
-  Image, 
-  Video, 
-  File, 
+import {
+  Upload,
+  X,
+  Image,
+  Video,
+  File,
   Loader2,
   CheckCircle,
   AlertCircle
@@ -33,9 +33,9 @@ interface UploadedFile {
   url?: string
 }
 
-export function FileUpload({ 
-  onUpload, 
-  accept = "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt", 
+export function FileUpload({
+  onUpload,
+  accept = "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt",
   multiple = false,
   maxSize = 10,
   className,
@@ -84,9 +84,9 @@ export function FileUpload({
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
+
     if (disabled) return
-    
+
     const droppedFiles = e.dataTransfer.files
     handleFiles(droppedFiles)
   }
@@ -108,7 +108,7 @@ export function FileUpload({
 
   const uploadFiles = async () => {
     const filesToUpload = files.filter(f => !f.uploaded && !f.uploading)
-    
+
     if (filesToUpload.length === 0) return
 
     // Set uploading state
@@ -120,7 +120,7 @@ export function FileUpload({
     try {
       const fileList = filesToUpload.map(f => f.file)
       const urls = await onUpload(fileList)
-      
+
       // Update with success state
       setFiles(prev => prev.map(f => {
         const fileIndex = filesToUpload.findIndex(ftu => ftu.file === f.file)
@@ -195,7 +195,7 @@ export function FileUpload({
             Choose Files
           </Button>
         </div>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -220,11 +220,11 @@ export function FileUpload({
               Upload {files.filter(f => !f.uploaded && !f.uploading).length} files
             </Button>
           </div>
-          
+
           <div className="space-y-2">
             {files.map((uploadedFile, index) => {
               const Icon = getFileIcon(uploadedFile.file)
-              
+
               return (
                 <Card key={index} className="p-3">
                   <CardContent className="p-0">
@@ -243,7 +243,7 @@ export function FileUpload({
                           </div>
                         )}
                       </div>
-                      
+
                       {/* File Info */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
@@ -253,7 +253,7 @@ export function FileUpload({
                           {formatFileSize(uploadedFile.file.size)}
                         </p>
                       </div>
-                      
+
                       {/* Status */}
                       <div className="flex items-center gap-2">
                         {uploadedFile.uploading && (
@@ -265,7 +265,7 @@ export function FileUpload({
                         {uploadedFile.error && (
                           <AlertCircle className="h-4 w-4 text-red-500" />
                         )}
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"

@@ -23,7 +23,7 @@ export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
   const [currentView, setCurrentView] = useState<View>('dashboard')
   const router = useRouter()
-  
+
   // State for data
   const [projects, setProjects] = useState<Project[]>([])
   const [posts, setPosts] = useState<Post[]>([])

@@ -1,5 +1,5 @@
 import { createClient } from './client'
-import { Profile, Project, Tribe, Post, Block, Channel } from '@/types'
+import { Profile, Project, Tribe, Post, Block, Channel, PostType } from '@/types'
 
 const supabase = createClient()
 
@@ -171,10 +171,15 @@ export async function updateProject(projectId: string, updates: Partial<Project>
     .update(mapProjectToDb(updates))
     .eq('id', projectId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
-    console.error('Error updating project:', error)
+    console.error('Error updating project:', JSON.stringify(error, null, 2))
+    return null
+  }
+
+  if (!data) {
+    console.error('Error updating project: Project not found or permission denied')
     return null
   }
 
@@ -291,8 +296,56 @@ export async function leaveTribe(userId: string, tribeId: string): Promise<boole
 }
 
 // Post queries
-export async function getPosts(limit = 20, offset = 0): Promise<Post[]> {
-  const { data, error } = await supabase
+// Helpers to map between DB snake_case and app camelCase for Posts
+type DbPost = {
+  id: string
+  user_id: string
+  project_id?: string | null
+  tribe_id?: string | null
+  type: PostType
+  title?: string | null
+  content: string
+  media_url?: string | null
+  media_type?: string | null
+  thumbnail_url?: string | null
+  is_featured: boolean
+  view_count: number
+  created_at: string
+  updated_at: string
+  user?: any
+  project?: any
+  tribe?: any
+  [key: string]: any
+}
+
+function mapPostFromDb(row: DbPost): Post {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    projectId: row.project_id || undefined,
+    tribeId: row.tribe_id || undefined,
+    type: row.type,
+    title: row.title || undefined,
+    content: row.content,
+    mediaUrl: row.media_url || undefined,
+    mediaType: row.media_type || undefined,
+    thumbnailUrl: row.thumbnail_url || undefined,
+    isFeatured: row.is_featured,
+    viewCount: row.view_count,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    user: row.user,
+    project: row.project,
+    tribe: row.tribe,
+    likeCount: 0, // Will be populated separately
+    commentCount: 0, // Will be populated separately
+    isLiked: false,
+    isSaved: false,
+  }
+}
+
+export async function getPosts(limit = 20, offset = 0, projectId?: string): Promise<Post[]> {
+  let query = supabase
     .from('posts')
     .select(`
       *,
@@ -303,6 +356,12 @@ export async function getPosts(limit = 20, offset = 0): Promise<Post[]> {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
+  if (projectId) {
+    query = query.eq('project_id', projectId)
+  }
+
+  const { data, error } = await query
+
   if (error) {
     console.error('Error fetching posts:', error)
     return []
@@ -310,7 +369,8 @@ export async function getPosts(limit = 20, offset = 0): Promise<Post[]> {
 
   // Get like and comment counts for each post
   const postsWithCounts = await Promise.all(
-    (data || []).map(async (post) => {
+    (data || []).map(async (row) => {
+      const post = mapPostFromDb(row as DbPost)
       const [likeCount, commentCount] = await Promise.all([
         getPostLikeCount(post.id),
         getPostCommentCount(post.id)
@@ -320,19 +380,36 @@ export async function getPosts(limit = 20, offset = 0): Promise<Post[]> {
         ...post,
         likeCount,
         commentCount,
-        isLiked: false, // Will be determined by user context
-        isSaved: false, // Will be determined by user context
       }
     })
   )
 
-  return postsWithCounts as Post[]
+  return postsWithCounts
 }
 
 export async function createPost(post: Partial<Post>): Promise<Post | null> {
+  // Map camelCase to snake_case
+  const dbPost: any = { ...post }
+  if (post.userId) { dbPost.user_id = post.userId; delete dbPost.userId }
+  if (post.projectId) { dbPost.project_id = post.projectId; delete dbPost.projectId }
+  if (post.tribeId) { dbPost.tribe_id = post.tribeId; delete dbPost.tribeId }
+  if (post.mediaUrl) { dbPost.media_url = post.mediaUrl; delete dbPost.mediaUrl }
+  if (post.mediaType) { dbPost.media_type = post.mediaType; delete dbPost.mediaType }
+  if (post.thumbnailUrl) { dbPost.thumbnail_url = post.thumbnailUrl; delete dbPost.thumbnailUrl }
+  if (post.isFeatured !== undefined) { dbPost.is_featured = post.isFeatured; delete dbPost.isFeatured }
+
+  // Remove view-only fields
+  delete dbPost.user
+  delete dbPost.project
+  delete dbPost.tribe
+  delete dbPost.likeCount
+  delete dbPost.commentCount
+  delete dbPost.isLiked
+  delete dbPost.isSaved
+
   const { data, error } = await supabase
     .from('posts')
-    .insert(post)
+    .insert(dbPost)
     .select(`
       *,
       user:profiles(*),
@@ -342,11 +419,56 @@ export async function createPost(post: Partial<Post>): Promise<Post | null> {
     .single()
 
   if (error) {
-    console.error('Error creating post:', error)
+    console.error('Error creating post:', JSON.stringify(error, null, 2))
     return null
   }
 
-  return data as Post
+  return mapPostFromDb(data as DbPost)
+}
+
+export async function updatePost(postId: string, updates: Partial<Post>): Promise<Post | null> {
+  // Map camelCase to snake_case
+  const dbPost: any = { ...updates }
+  if (updates.userId) { dbPost.user_id = updates.userId; delete dbPost.userId }
+  if (updates.projectId) { dbPost.project_id = updates.projectId; delete dbPost.projectId }
+  if (updates.tribeId) { dbPost.tribe_id = updates.tribeId; delete dbPost.tribeId }
+  if (updates.mediaUrl) { dbPost.media_url = updates.mediaUrl; delete dbPost.mediaUrl }
+  if (updates.mediaType) { dbPost.media_type = updates.mediaType; delete dbPost.mediaType }
+  if (updates.thumbnailUrl) { dbPost.thumbnail_url = updates.thumbnailUrl; delete dbPost.thumbnailUrl }
+  if (updates.isFeatured !== undefined) { dbPost.is_featured = updates.isFeatured; delete dbPost.isFeatured }
+
+  // Remove view-only fields
+  delete dbPost.id
+  delete dbPost.user
+  delete dbPost.project
+  delete dbPost.tribe
+  delete dbPost.likeCount
+  delete dbPost.commentCount
+  delete dbPost.isLiked
+  delete dbPost.isSaved
+  delete dbPost.createdAt
+  delete dbPost.updatedAt
+
+  dbPost.updated_at = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('posts')
+    .update(dbPost)
+    .eq('id', postId)
+    .select(`
+      *,
+      user:profiles(*),
+      project:projects(*),
+      tribe:tribes(*)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error updating post:', JSON.stringify(error, null, 2))
+    return null
+  }
+
+  return mapPostFromDb(data as DbPost)
 }
 
 export async function getPostLikeCount(postId: string): Promise<number> {
@@ -516,6 +638,9 @@ export async function searchTribes(query: string): Promise<Tribe[]> {
 }
 
 // Storage helpers
+// Note: These are legacy functions. New code should use the storage utilities from @/lib/storage
+// Keeping these for backward compatibility
+
 export async function uploadFile(bucket: string, path: string, file: File): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(bucket)
@@ -545,4 +670,25 @@ export async function deleteFile(bucket: string, path: string): Promise<boolean>
 
   return true
 }
+
+// Re-export storage utilities for convenience
+// Note: uploadFile and deleteFile are already defined above, so we export the new ones with different names
+export {
+  uploadFile as uploadFileWithValidation,
+  uploadFiles,
+  deleteFile as deleteStorageFile,
+  deleteFiles,
+  getPublicUrl,
+  fileExists,
+  generateFilePath,
+  validateFile,
+  formatFileSize,
+  formatDuration,
+  getFileType,
+  FILE_TYPES,
+  type FileMetadata,
+  type FileValidationResult,
+  type UploadOptions,
+  type UploadResult
+} from '@/lib/storage'
 

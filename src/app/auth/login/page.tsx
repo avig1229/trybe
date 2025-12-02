@@ -16,11 +16,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/valley'
-  
+
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -111,7 +111,7 @@ export default function LoginPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           {message && (
             <Alert>
               <AlertDescription>{message}</AlertDescription>
