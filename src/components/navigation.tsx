@@ -7,13 +7,13 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { 
-  LayoutDashboard, 
-  Mountain, 
-  Heart, 
-  Users, 
-  Search, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Mountain,
+  Heart,
+  Users,
+  Search,
+  Bell,
   Plus,
   User,
   LogOut,
@@ -37,7 +37,7 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
 
   const navigationItems = [
     { id: 'dashboard' as View, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'valley' as View, label: 'Project Valley', icon: Mountain },
+    { id: 'valley' as View, label: 'Valley', icon: Mountain },
   ]
 
   const handleSignOut = async () => {
@@ -66,134 +66,96 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
   }, [])
 
   return (
-    <nav className="border-b border-border bg-card">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Mountain className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Trybe
-              </span>
+    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md transition-all duration-300">
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-12 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo - Typographic */}
+          <div className="flex items-center gap-12">
+            <Link href="/" className="text-2xl font-bold tracking-tighter uppercase">
+              TRYBE
             </Link>
 
-            {/* Main Navigation */}
-            <div className="hidden md:flex items-center gap-1">
+            {/* Main Navigation - Minimal Text */}
+            <div className="hidden md:flex items-center gap-8">
               {navigationItems.map((item) => {
-                const Icon = item.icon
                 const isActive = currentView === item.id
-                
+
                 return (
-                  <Button
+                  <button
                     key={item.id}
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
                     onClick={() => onViewChange(item.id)}
                     className={cn(
-                      "gap-2",
-                      isActive && "bg-primary text-primary-foreground"
+                      "text-xs font-medium tracking-[0.2em] uppercase transition-opacity hover:opacity-100",
+                      isActive ? "opacity-100" : "opacity-40"
                     )}
                   >
-                    <Icon className="h-4 w-4" />
                     {item.label}
-                  </Button>
+                  </button>
                 )
               })}
             </div>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
-            {/* Search */}
-            <Button variant="ghost" size="sm" className="hidden sm:flex">
-              <Search className="h-4 w-4" />
-            </Button>
-
+          <div className="flex items-center gap-6">
             {/* Theme Toggle */}
-            <Button variant="ghost" size="sm" onClick={toggleTheme}>
-              <Sun className="h-4 w-4 hidden dark:inline" />
-              <Moon className="h-4 w-4 dark:hidden" />
-            </Button>
+            <button onClick={toggleTheme} className="opacity-40 hover:opacity-100 transition-opacity">
+              <Sun className="h-4 w-4 hidden dark:inline" strokeWidth={1.5} />
+              <Moon className="h-4 w-4 dark:hidden" strokeWidth={1.5} />
+            </button>
 
-            {/* Create Button */}
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create</span>
-            </Button>
-
-            {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell className="h-4 w-4" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              >
-                3
-              </Badge>
-            </Button>
+            {/* Create Button - Minimal */}
+            <button className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">
+              <Plus className="h-3 w-3" />
+              <span>Create</span>
+            </button>
 
             {/* User Menu */}
             <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-1"
+                className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity"
               >
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 rounded-none">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>
+                  <AvatarFallback className="rounded-none bg-neutral-100 dark:bg-neutral-800 text-xs">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
+              </button>
 
-              {/* User Dropdown Menu */}
+              {/* User Dropdown Menu - Minimal */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-2 border-b border-border">
-                      <p className="text-sm font-medium">{profile?.username || user?.email}</p>
-                      <p className="text-xs text-muted-foreground">Creator</p>
-                    </div>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => {
-                        setShowUserMenu(false)
-                        const uname = profile?.username || user?.email?.split('@')[0] || user?.id
-                        router.push(`/u/${uname}`)
-                      }}
-                    >
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </Button>
+                <div className="absolute right-0 mt-4 w-56 bg-background border border-neutral-200 dark:border-neutral-800 p-2 shadow-xl z-50">
+                  <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 mb-2">
+                    <p className="text-sm font-medium truncate">{profile?.username || user?.email}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 mt-1">Creator</p>
                   </div>
+
+                  <button
+                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      const uname = profile?.username || user?.email?.split('@')[0] || user?.id
+                      router.push(`/u/${uname}`)
+                    }}
+                  >
+                    Profile
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Settings
+                  </button>
+
+                  <button
+                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                    onClick={handleSignOut}
+                  >
+                    Sign Out
+                  </button>
                 </div>
               )}
             </div>
@@ -201,26 +163,21 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden border-t border-border py-2">
-          <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="md:hidden border-t border-neutral-100 dark:border-neutral-800 py-4">
+          <div className="flex items-center gap-6 overflow-x-auto">
             {navigationItems.map((item) => {
-              const Icon = item.icon
               const isActive = currentView === item.id
-              
               return (
-                <Button
+                <button
                   key={item.id}
-                  variant={isActive ? "default" : "ghost"}
-                  size="sm"
                   onClick={() => onViewChange(item.id)}
                   className={cn(
-                    "gap-2 whitespace-nowrap",
-                    isActive && "bg-primary text-primary-foreground"
+                    "text-xs font-medium tracking-[0.2em] uppercase whitespace-nowrap transition-opacity",
+                    isActive ? "opacity-100" : "opacity-40"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
                   {item.label}
-                </Button>
+                </button>
               )
             })}
           </div>

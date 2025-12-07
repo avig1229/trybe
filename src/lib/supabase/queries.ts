@@ -70,6 +70,8 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   if (updates.lookingForCollaboration !== undefined) payload.looking_for_collaboration = updates.lookingForCollaboration
   if (updates.portfolioUrl !== undefined) payload.portfolio_url = updates.portfolioUrl
 
+  console.log('Updating profile payload:', JSON.stringify(payload, null, 2))
+
   const { data, error } = await supabase
     .from('profiles')
     .update(payload)
@@ -78,7 +80,7 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
     .single()
 
   if (error) {
-    console.error('Error updating profile:', error)
+    console.error('Error updating profile:', JSON.stringify(error, null, 2))
     return null
   }
 

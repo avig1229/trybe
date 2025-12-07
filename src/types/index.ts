@@ -1,7 +1,7 @@
 // Core Types
 export type BlockType = 'image' | 'link' | 'text' | 'video' | 'audio' | 'file'
 export type ProjectStatus = 'active' | 'planning' | 'completed' | 'paused'
-export type PostType = 'progress' | 'question' | 'showcase' | 'collaboration_request'
+export type PostType = 'progress' | 'question' | 'showcase' | 'collaboration_request' | 'daily_update'
 export type TribeRole = 'member' | 'moderator' | 'admin'
 export type LikeType = 'like' | 'love' | 'support' | 'inspire'
 export type NotificationType = 'like' | 'comment' | 'collaboration_request' | 'tribe_invite' | 'project_update'

@@ -5,19 +5,23 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
-import { ProjectValley } from '@/components/project-valley'
 import ProjectDashboard from '@/components/ProjectDashboard'
 import ProjectList from '@/components/ProjectList'
 import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
-import { Loader2 } from 'lucide-react'
+import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
 import { getProjects, createProject, deleteProject } from '@/lib/supabase/queries'
+import { ContributionGraph } from '@/components/ContributionGraph'
+import { cn } from '@/lib/utils'
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { getDailyLockStatus } from '@/lib/daily-lock'
+import DailyCheckIn from '@/components/DailyCheckIn'
+
+
 
 export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
@@ -33,6 +37,7 @@ export default function ValleyPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true)
   const [projectsError, setProjectsError] = useState<string>('')
+  const [isLocked, setIsLocked] = useState<boolean | null>(null) // null = loading
 
   // Create project dialog state
   const [showCreate, setShowCreate] = useState(false)
@@ -40,6 +45,16 @@ export default function ValleyPage() {
   const [newDescription, setNewDescription] = useState('')
   const [newIsPublic, setNewIsPublic] = useState(true)
   const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    const checkLock = async () => {
+      if (user) {
+        const { isLocked } = await getDailyLockStatus(user.id)
+        setIsLocked(isLocked)
+      }
+    }
+    checkLock()
+  }, [user])
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -201,6 +216,13 @@ export default function ValleyPage() {
     // TODO: Navigate to tribe detail page
   }
 
+  const handleUnlock = () => {
+    setIsLocked(false)
+  }
+
+  // Removed early return for isLocked to allow background rendering
+
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -242,62 +264,62 @@ export default function ValleyPage() {
         )
       case 'valley':
         return (
-          <div className="min-h-[70vh] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
-            <div style={{ width: sidebarCollapsed ? 56 : sidebarWidth }} className="transition-[width] overflow-hidden relative">
-              <div className="flex items-center justify-between mb-3">
-                {!sidebarCollapsed ? (
-                  <>
-                    <h3 className="text-sm font-semibold">Projects</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setSidebarCollapsed(true)}>
-                      Collapse
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="ghost" size="sm" onClick={() => setSidebarCollapsed(false)}>
-                    Expand
-                  </Button>
+          <div className="min-h-[80vh] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-12">
+            <div
+              className={cn(
+                "transition-all duration-500 overflow-hidden relative hidden lg:block",
+                sidebarCollapsed ? "w-12" : "w-[320px]"
+              )}
+            >
+              <div className="sticky top-0 h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar space-y-12">
+                {/* Collapse Toggle */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                  >
+                    {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                {!sidebarCollapsed && (
+                  <div className="space-y-12 animate-in fade-in slide-in-from-left-4 duration-500">
+                    {/* Daily Check-in Board */}
+                    <div className="space-y-4">
+                      <h3 className="text-xs uppercase tracking-[0.2em] opacity-50">Daily Check-ins</h3>
+                      {user && <ContributionGraph userId={user.id} />}
+                    </div>
+
+                    <ProjectList
+                      projects={projects}
+                      selectedProjectId={selectedProjectId}
+                      onSelect={handleViewProject}
+                      onCreate={handleCreateProject}
+                      onDelete={handleDeleteProject}
+                    />
+                  </div>
                 )}
               </div>
-              <ProjectList
-                projects={projects}
-                selectedProjectId={selectedProjectId}
-                onSelect={handleViewProject}
-                onCreate={handleCreateProject}
-                onDelete={handleDeleteProject}
-              />
-              {/* Resize handle */}
-              {!sidebarCollapsed && (
-                <div
-                  onMouseDown={(e) => {
-                    const startX = e.clientX
-                    const startW = sidebarWidth
-                    const onMove = (ev: MouseEvent) => {
-                      const delta = ev.clientX - startX
-                      const next = Math.min(500, Math.max(220, startW + delta))
-                      setSidebarWidth(next)
-                    }
-                    const onUp = () => {
-                      window.removeEventListener('mousemove', onMove)
-                      window.removeEventListener('mouseup', onUp)
-                    }
-                    window.addEventListener('mousemove', onMove)
-                    window.addEventListener('mouseup', onUp)
-                  }}
-                  className="w-1 cursor-col-resize bg-transparent hover:bg-muted rounded-full h-full absolute right-0 top-0"
-                />
-              )}
-              {sidebarCollapsed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSidebarCollapsed(false)}
-                  className="absolute -right-10 top-2"
-                >
-                  Expand
-                </Button>
-              )}
             </div>
-            <div>
+
+            {/* Mobile Project List Toggle */}
+            <div className="lg:hidden mb-8">
+              <select
+                className="w-full bg-transparent border-b border-black dark:border-white py-2 text-lg uppercase tracking-widest font-bold outline-none"
+                value={selectedProjectId || ''}
+                onChange={(e) => {
+                  const p = projects.find(proj => proj.id === e.target.value)
+                  if (p) handleViewProject(p)
+                }}
+              >
+                <option value="" disabled>SELECT PROJECT</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-h-[50vh]">
               {selectedProjectId && projects.find(p => p.id === selectedProjectId) ? (
                 <ProjectDashboard
                   project={projects.find(p => p.id === selectedProjectId)}
@@ -306,36 +328,62 @@ export default function ValleyPage() {
                   }}
                 />
               ) : (
-                <Card className="p-8">
-                  <CardHeader>
-                    <CardTitle>Select a project to view its dashboard</CardTitle>
-                  </CardHeader>
-                </Card>
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
+                  <div className="text-4xl font-light tracking-tighter uppercase">Select a Project</div>
+                  <p className="text-sm uppercase tracking-widest">Begin your creative flow</p>
+                </div>
               )}
             </div>
 
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
-              <DialogContent>
+              <DialogContent className="sm:max-w-md border-none shadow-2xl bg-background/95 backdrop-blur-xl">
                 <DialogHeader>
-                  <DialogTitle>Create Project</DialogTitle>
-                  <DialogDescription>Organize your work in a new project.</DialogDescription>
+                  <DialogTitle className="text-2xl font-bold uppercase tracking-tighter">New Project</DialogTitle>
+                  <DialogDescription className="text-xs uppercase tracking-widest">Initialize a new workspace</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm">Name</label>
-                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="My Awesome Project" />
+                <div className="space-y-8 py-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest opacity-50">Project Name</label>
+                    <Input
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="UNTITLED PROJECT"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium uppercase tracking-wide focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
+                    />
                   </div>
-                  <div>
-                    <label className="text-sm">Description</label>
-                    <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="What is this about?" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest opacity-50">Description</label>
+                    <Textarea
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      placeholder="Brief abstract..."
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 min-h-[100px] resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input id="public" type="checkbox" checked={newIsPublic} onChange={(e) => setNewIsPublic(e.target.checked)} />
-                    <label htmlFor="public" className="text-sm">Make project public</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="public"
+                      type="checkbox"
+                      checked={newIsPublic}
+                      onChange={(e) => setNewIsPublic(e.target.checked)}
+                      className="w-4 h-4 rounded-none border-neutral-300 text-black focus:ring-black"
+                    />
+                    <label htmlFor="public" className="text-xs uppercase tracking-widest cursor-pointer select-none">Make Public</label>
                   </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-                    <Button onClick={submitCreate} disabled={!newName.trim() || creating}>{creating ? 'Creating…' : 'Create Project'}</Button>
+                  <div className="flex justify-end gap-4 pt-4">
+                    <button
+                      onClick={() => setShowCreate(false)}
+                      className="text-xs uppercase tracking-widest hover:opacity-50 transition-opacity"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={submitCreate}
+                      disabled={!newName.trim() || creating}
+                      className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 text-xs uppercase tracking-widest hover:opacity-80 transition-opacity disabled:opacity-50"
+                    >
+                      {creating ? 'Creating...' : 'Create'}
+                    </button>
                   </div>
                 </div>
               </DialogContent>
@@ -373,9 +421,10 @@ export default function ValleyPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-screen-2xl mx-auto px-4 md:px-12 py-12">
         {renderCurrentView()}
       </main>
+      {isLocked && <DailyCheckIn onUnlock={handleUnlock} />}
     </div>
   )
 }
