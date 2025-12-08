@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { FileText, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Project, Channel, Block, ProjectStatus, Post } from '@/types'
-import { getChannels, getBlocks, updateProject, getPosts } from '@/lib/supabase/queries'
+import { getChannels, getBlocks, updateProject, getPosts, createChannel, deleteChannel } from '@/lib/supabase/queries'
 import { ResourceUploadModal } from './upload/ResourceUploadModal'
 import { ProgressUploadModal } from './upload/ProgressUploadModal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -30,6 +30,11 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   //   }
   // }
 
+  // Channel State
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
+  const [newChannelName, setNewChannelName] = useState('')
+  const [isCreatingChannel, setIsCreatingChannel] = useState(false)
+
   useEffect(() => {
     if (project) setStatus(project.status)
   }, [project])
@@ -43,6 +48,16 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     ])
     setChannels(chans)
     setPosts(projectPosts)
+
+    // Select first channel if none selected, or if current selection is invalid
+    if (chans.length > 0) {
+      if (!selectedChannelId || !chans.find(c => c.id === selectedChannelId)) {
+        setSelectedChannelId(chans[0].id)
+      }
+    } else {
+      setSelectedChannelId(null)
+    }
+
     const allBlocks = await Promise.all(chans.map((c) => getBlocks(c.id)))
     setBlocks(allBlocks.flat())
     // setLoading(false)
@@ -59,6 +74,28 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     if (!project?.id) return
     const updated = await updateProject(project.id, { status: next })
     if (updated) onProjectUpdated?.(updated)
+  }
+
+  const handleCreateChannel = async () => {
+    if (!project?.id || !newChannelName.trim()) return
+    const created = await createChannel({
+      projectId: project.id,
+      name: newChannelName.trim(),
+      color: 'bg-neutral-900', // Default color
+      orderIndex: channels.length
+    })
+    if (created) {
+      setNewChannelName('')
+      setIsCreatingChannel(false)
+      await loadData()
+      setSelectedChannelId(created.id)
+    }
+  }
+
+  const handleDeleteChannel = async (channelId: string) => {
+    if (!confirm('Are you sure? This will delete all resources in this channel.')) return
+    await deleteChannel(channelId)
+    await loadData()
   }
 
   const totalResources = blocks.length
@@ -279,37 +316,126 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
 
         {activeTab === 'resources' && (
           <div className="space-y-12">
-            <div className="flex justify-end">
-              {defaultChannelId && (
-                <ResourceUploadModal
-                  projectId={project!.id}
-                  channelId={defaultChannelId}
-                  userId={user?.id || project!.userId}
-                  onSuccess={loadData}
-                  trigger={
-                    <button className="text-[10px] uppercase tracking-[0.2em] border border-black dark:border-white px-6 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
-                      + Add Resource
+            {/* Channel Navigation */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+              <div className="flex items-center gap-8 overflow-x-auto no-scrollbar pb-2 md:pb-0">
+                {channels.map(channel => (
+                  <div key={channel.id} className="group relative flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedChannelId(channel.id)}
+                      className={cn(
+                        "text-xs uppercase tracking-[0.2em] transition-all whitespace-nowrap hover:opacity-100",
+                        selectedChannelId === channel.id ? "opacity-100 font-bold" : "opacity-40"
+                      )}
+                    >
+                      {channel.name}
+                      <span className="ml-2 opacity-50 text-[10px]">{channel.blockCount || 0}</span>
                     </button>
-                  }
-                />
-              )}
-            </div>
-
-            {blocks.length === 0 ? (
-              <div className="py-32 text-center text-neutral-400 font-light">No resources yet.</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
-                {blocks.map((b) => (
-                  <div key={b.id} className="group space-y-6">
-                    <div className="aspect-[3/4] bg-neutral-100 dark:bg-neutral-900 p-8 flex flex-col justify-between transition-colors group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800">
-                      <div className="uppercase text-[10px] tracking-[0.2em] opacity-40">{b.type}</div>
-                      <p className="text-sm leading-relaxed font-light">{b.content}</p>
-                    </div>
-                    <h4 className="text-lg uppercase tracking-widest font-medium">{b.title || 'Untitled'}</h4>
+                    {selectedChannelId === channel.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteChannel(channel.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500"
+                        title="Delete Channel"
+                      >
+                        <span className="sr-only">Delete</span>
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    )}
                   </div>
                 ))}
+
+                {/* New Channel Input */}
+                {isCreatingChannel ? (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                    <input
+                      autoFocus
+                      value={newChannelName}
+                      onChange={(e) => setNewChannelName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateChannel()
+                        if (e.key === 'Escape') setIsCreatingChannel(false)
+                      }}
+                      className="bg-transparent border-b border-black dark:border-white w-32 py-1 text-xs uppercase tracking-widest outline-none"
+                      placeholder="NAME..."
+                    />
+                    <button onClick={handleCreateChannel} className="text-[10px] uppercase font-bold hover:opacity-50">Add</button>
+                    <button onClick={() => setIsCreatingChannel(false)} className="text-[10px] uppercase opacity-50 hover:opacity-100">Cancel</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsCreatingChannel(true)}
+                    className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 whitespace-nowrap flex items-center gap-1"
+                  >
+                    + New Channel
+                  </button>
+                )}
               </div>
-            )}
+
+              <div className="flex justify-end shrink-0">
+                {selectedChannelId && (
+                  <ResourceUploadModal
+                    projectId={project!.id}
+                    channelId={selectedChannelId}
+                    userId={user?.id || project!.userId}
+                    onSuccess={loadData}
+                    trigger={
+                      <button className="text-[10px] uppercase tracking-[0.2em] border border-black dark:border-white px-6 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
+                        + Add Resource
+                      </button>
+                    }
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Resources Grid */}
+            {(() => {
+              const filteredBlocks = blocks.filter(b => b.channelId === selectedChannelId)
+
+              if (channels.length === 0) {
+                return (
+                  <div className="py-32 text-center text-neutral-400 font-light flex flex-col items-center gap-4">
+                    <div>No channels yet.</div>
+                    <button onClick={() => setIsCreatingChannel(true)} className="text-xs uppercase tracking-widest border-b border-black dark:border-white pb-1 hover:opacity-50">Create your first channel</button>
+                  </div>
+                )
+              }
+
+              if (filteredBlocks.length === 0) {
+                return <div className="py-32 text-center text-neutral-400 font-light">No resources in this channel.</div>
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+                  {filteredBlocks.map((b) => (
+                    <div key={b.id} className="group space-y-6">
+                      <div className="aspect-[3/4] bg-neutral-100 dark:bg-neutral-900 p-8 flex flex-col justify-between transition-colors group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800">
+                        <div className="uppercase text-[10px] tracking-[0.2em] opacity-40">{b.type}</div>
+                        {b.type === 'image' || b.type === 'video' ? (
+                          // If it's media, we might want to show a preview if content is a URL
+                          // For now, just showing content text or a placeholder
+                          <div className="flex-1 flex items-center justify-center overflow-hidden my-4">
+                            {/* Simple check if content is a URL */}
+                            {b.content.startsWith('http') ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={b.content} alt="" className="max-w-full max-h-full object-contain mix-blend-multiply dark:mix-blend-screen" />
+                            ) : (
+                              <p className="text-sm leading-relaxed font-light line-clamp-6">{b.content}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm leading-relaxed font-light overflow-y-auto no-scrollbar flex-1 my-4">{b.content}</p>
+                        )}
+                      </div>
+                      <h4 className="text-lg uppercase tracking-widest font-medium truncate">{b.title || 'Untitled'}</h4>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
         )}
 

@@ -11,7 +11,7 @@ import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
 import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
-import { getProjects, createProject, deleteProject } from '@/lib/supabase/queries'
+import { getProjects, getUserProjects, createProject, deleteProject } from '@/lib/supabase/queries'
 import { ContributionGraph } from '@/components/ContributionGraph'
 import { cn } from '@/lib/utils'
 
@@ -65,7 +65,9 @@ export default function ValleyPage() {
       // setLoadingProjects(true)
       // setProjectsError('')
       try {
-        const data = await getProjects(user.id)
+        // Use getUserProjects to STRICTLY fetch only projects owned by the user
+        // This prevents public projects from other users appearing in the dashboard
+        const data = await getUserProjects(user.id)
         setProjects(data)
         if (!selectedProjectId && data.length > 0) {
           setSelectedProjectId(data[0].id)

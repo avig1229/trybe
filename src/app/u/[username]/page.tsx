@@ -26,14 +26,27 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const load = async () => {
+      console.log('ProfilePage: Loading for username:', username)
       if (!username) return
       setLoading(true)
-      const p = await getProfileByUsername(username)
-      if (!p) { router.push('/valley'); return }
-      setProfile(p)
-      const proj = await getProjects(p.id)
-      setProjects(proj.filter(pr => pr.userId === p.id))
-      setLoading(false)
+      try {
+        const p = await getProfileByUsername(username)
+        console.log('ProfilePage: Fetched profile:', p)
+        if (!p) {
+          console.warn('ProfilePage: Profile not found, redirecting...')
+          // router.push('/valley'); 
+          // Commenting out redirect for debugging to see the error state
+          setLoading(false)
+          return
+        }
+        setProfile(p)
+        const proj = await getProjects(p.id)
+        setProjects(proj.filter(pr => pr.userId === p.id))
+      } catch (e) {
+        console.error('ProfilePage: Error loading profile:', e)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [username])
@@ -56,8 +69,18 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <div className="animate-spin h-8 w-8 border-4 border-black dark:border-white border-t-transparent rounded-full" />
+        <p className="text-xs uppercase tracking-widest animate-pulse">Loading Profile...</p>
+      </div>
+    )
+  }
+
+  if (!profile && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-neutral-500">Profile not found.</p>
+        <Link href="/valley" className="text-xs uppercase tracking-widest border-b border-black">Back home</Link>
       </div>
     )
   }
@@ -155,7 +178,7 @@ export default function UserProfilePage() {
                   <div className="w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 animate-pulse" title="Open to Collaboration" />
                 )}
               </div>
-              <p className="text-xl md:text-2xl font-light text-neutral-500 max-w-2xl">
+              <p className="text-xl md:text-2xl font-light text-neutral-600 dark:text-neutral-300 max-w-2xl">
                 {profile.bio || 'No bio provided.'}
               </p>
             </div>
@@ -326,7 +349,7 @@ export default function UserProfilePage() {
                     <Input
                       value={form.fullName || ''}
                       onChange={e => setForm({ ...form, fullName: e.target.value })}
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -334,7 +357,7 @@ export default function UserProfilePage() {
                     <Input
                       value={form.username || ''}
                       onChange={e => setForm({ ...form, username: e.target.value })}
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -342,7 +365,7 @@ export default function UserProfilePage() {
                     <Input
                       value={form.location || ''}
                       onChange={e => setForm({ ...form, location: e.target.value })}
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                     />
                   </div>
                 </div>
@@ -353,7 +376,7 @@ export default function UserProfilePage() {
                     <Input
                       value={form.website || ''}
                       onChange={e => setForm({ ...form, website: e.target.value })}
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -361,7 +384,7 @@ export default function UserProfilePage() {
                     <Input
                       value={form.portfolioUrl || ''}
                       onChange={e => setForm({ ...form, portfolioUrl: e.target.value })}
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                     />
                   </div>
                   <div className="flex items-center gap-4 pt-4">
@@ -381,7 +404,7 @@ export default function UserProfilePage() {
                   <Textarea
                     value={form.bio || ''}
                     onChange={e => setForm({ ...form, bio: e.target.value })}
-                    className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-light min-h-[100px] resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white"
+                    className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-light min-h-[100px] bg-transparent resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
                   />
                 </div>
 
@@ -391,7 +414,7 @@ export default function UserProfilePage() {
                     value={form.creativePhilosophy || ''}
                     onChange={e => setForm({ ...form, creativePhilosophy: e.target.value })}
                     placeholder="What drives your work?"
-                    className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-2xl font-light min-h-[150px] resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-200"
+                    className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-2xl font-light min-h-[150px] bg-transparent resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-200 dark:placeholder:text-neutral-700 text-black dark:text-white"
                   />
                 </div>
               </div>

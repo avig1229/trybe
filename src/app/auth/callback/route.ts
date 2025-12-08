@@ -9,11 +9,11 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (!error) {
       // Get the user to create profile if needed
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (user) {
         // Check if profile exists
         const { data: profile } = await supabase
@@ -31,11 +31,15 @@ export async function GET(request: NextRequest) {
               username: user.user_metadata?.preferred_username || user.email?.split('@')[0],
               full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
             })
+
+          // New user! Redirect to their profile page
+          const username = user.user_metadata?.preferred_username || user.email?.split('@')[0]
+          return NextResponse.redirect(`${origin}/u/${username}`)
         }
       }
     }
   }
 
-  // Redirect to the specified page or default
+  // Existing user or error, redirect to default (valley)
   return NextResponse.redirect(`${origin}${redirectTo}`)
 }

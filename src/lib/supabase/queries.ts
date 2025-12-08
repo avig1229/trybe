@@ -152,6 +152,21 @@ export async function getProjects(userId?: string): Promise<Project[]> {
   return ((data || []) as DbProject[]).map(mapProjectFromDb)
 }
 
+export async function getUserProjects(userId: string): Promise<Project[]> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching user projects:', error)
+    return []
+  }
+
+  return ((data || []) as DbProject[]).map(mapProjectFromDb)
+}
+
 export async function createProject(project: Partial<Project>): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
