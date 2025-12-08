@@ -3,19 +3,19 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+// import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { 
-  TrendingUp, 
-  Users, 
-  Heart, 
-  MessageCircle, 
+import {
+  TrendingUp,
+  Users,
+  Heart,
+  // MessageCircle, 
   Eye,
-  Calendar,
+  // Calendar,
   Target,
   Award,
   ArrowRight,
-  Plus,
+  // Plus,
   Sparkles,
   Mountain
 } from 'lucide-react'
@@ -35,22 +35,22 @@ interface DashboardProps {
   onViewTribe: (tribe: Tribe) => void
 }
 
-export function Dashboard({ 
-  profile, 
-  projects, 
-  posts, 
-  tribes, 
-  onCreateProject, 
-  onCreatePost, 
-  onCreateTribe, 
-  onViewProject, 
-  onViewPost, 
-  onViewTribe 
+export function Dashboard({
+  profile,
+  projects,
+  posts,
+  tribes,
+  onCreateProject,
+  onCreatePost,
+  onCreateTribe,
+  onViewProject,
+  onViewPost,
+  onViewTribe
 }: DashboardProps) {
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week')
 
   const activeProjects = projects.filter(p => p.status === 'active')
-  const completedProjects = projects.filter(p => p.status === 'completed')
+  // const completedProjects = projects.filter(p => p.status === 'completed')
   const myTribes = tribes.filter(t => t.isMember)
   const recentPosts = posts.slice(0, 5)
   const totalLikes = posts.reduce((sum, post) => sum + (post.likeCount || 0), 0)
@@ -66,7 +66,7 @@ export function Dashboard({
   const formatTimeAgo = (date: Date) => {
     const now = new Date()
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-    
+
     if (diffInSeconds < 60) return 'Just now'
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
@@ -93,7 +93,7 @@ export function Dashboard({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant={timeframe === 'week' ? 'default' : 'outline'}
@@ -284,7 +284,7 @@ export function Dashboard({
               ) : (
                 activeProjects.map((project) => (
                   <div key={project.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onViewProject(project)}>
-                    <div 
+                    <div
                       className={cn(
                         "w-3 h-3 rounded-full flex-shrink-0",
                         project.color || 'bg-neutral-900'

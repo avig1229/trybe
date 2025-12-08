@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
-import { getProfile, createProfile, updateProfile } from '@/lib/supabase/queries'
+import { getProfile, createProfile } from '@/lib/supabase/queries'
 import { Profile } from '@/types'
 
 interface AuthContextType {

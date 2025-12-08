@@ -18,7 +18,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -59,18 +59,20 @@ export default function SignupPage() {
               full_name: fullName,
             })
         } catch (profileError) {
+          console.error(profileError)
           // Profile creation failed, but that's okay - the trigger will handle it
           console.log('Profile will be created after email confirmation')
         }
 
         setMessage('Account created! Check your email to confirm your account.')
-        
+
         // Redirect after a short delay
         setTimeout(() => {
           router.push('/auth/login')
         }, 2000)
       }
     } catch (err) {
+      console.error(err)
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -94,6 +96,7 @@ export default function SignupPage() {
         setIsLoading(false)
       }
     } catch (err) {
+      console.error(err)
       setError('An unexpected error occurred')
       setIsLoading(false)
     }
@@ -114,7 +117,7 @@ export default function SignupPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           {message && (
             <Alert>
               <AlertDescription>{message}</AlertDescription>

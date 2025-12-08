@@ -25,6 +25,7 @@ import DailyCheckIn from '@/components/DailyCheckIn'
 
 export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
+  console.log('ValleyPage render:', { user: user?.id, loading, profile: !!profile })
   const [currentView, setCurrentView] = useState<View>('dashboard')
   const router = useRouter()
 
@@ -35,8 +36,8 @@ export default function ValleyPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState<number>(320)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
-  const [loadingProjects, setLoadingProjects] = useState<boolean>(true)
-  const [projectsError, setProjectsError] = useState<string>('')
+  // const [loadingProjects, setLoadingProjects] = useState<boolean>(true)
+  // const [projectsError, setProjectsError] = useState<string>('')
   const [isLocked, setIsLocked] = useState<boolean | null>(null) // null = loading
 
   // Create project dialog state
@@ -49,7 +50,9 @@ export default function ValleyPage() {
   useEffect(() => {
     const checkLock = async () => {
       if (user) {
+        console.log('Checking lock status for user:', user.id)
         const { isLocked } = await getDailyLockStatus(user.id)
+        console.log('Lock status result:', isLocked)
         setIsLocked(isLocked)
       }
     }
@@ -59,8 +62,8 @@ export default function ValleyPage() {
   useEffect(() => {
     const loadProjects = async () => {
       if (!user) return
-      setLoadingProjects(true)
-      setProjectsError('')
+      // setLoadingProjects(true)
+      // setProjectsError('')
       try {
         const data = await getProjects(user.id)
         setProjects(data)
@@ -68,9 +71,10 @@ export default function ValleyPage() {
           setSelectedProjectId(data[0].id)
         }
       } catch (e) {
-        setProjectsError('Failed to load projects')
+        // setProjectsError('Failed to load projects')
+        console.error(e)
       } finally {
-        setLoadingProjects(false)
+        // setLoadingProjects(false)
       }
     }
 
@@ -113,16 +117,16 @@ export default function ValleyPage() {
         },
       ])
     }
-  }, [user?.id, profile?.id]) // Only depend on IDs to prevent unnecessary re-renders
+  }, [user, profile]) // Only depend on IDs to prevent unnecessary re-renders
 
   const handleCreateProject = () => {
     setShowCreate(true)
   }
 
-  const handleEditProject = (project: Project) => {
-    console.log('Edit project:', project)
-    // TODO: Implement project editing
-  }
+  // const handleEditProject = (project: Project) => {
+  //   console.log('Edit project:', project)
+  //   // TODO: Implement project editing
+  // }
 
   const handleDeleteProject = (projectId: string) => {
     // Optimistic UI delete
@@ -264,7 +268,7 @@ export default function ValleyPage() {
         )
       case 'valley':
         return (
-          <div className="min-h-[80vh] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-12">
+          <div className="min-h-[calc(100vh-6rem)] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8">
             <div
               className={cn(
                 "transition-all duration-500 overflow-hidden relative hidden lg:block",
@@ -276,7 +280,7 @@ export default function ValleyPage() {
                 <div className="flex justify-end">
                   <button
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                    className="p-2 hover-invert rounded-none border border-transparent hover:border-white transition-all"
                   >
                     {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                   </button>
@@ -305,7 +309,7 @@ export default function ValleyPage() {
             {/* Mobile Project List Toggle */}
             <div className="lg:hidden mb-8">
               <select
-                className="w-full bg-transparent border-b border-black dark:border-white py-2 text-lg uppercase tracking-widest font-bold outline-none"
+                className="w-full bg-transparent border-b border-white py-2 text-lg uppercase tracking-widest font-bold outline-none rounded-none"
                 value={selectedProjectId || ''}
                 onChange={(e) => {
                   const p = projects.find(proj => proj.id === e.target.value)
@@ -314,7 +318,7 @@ export default function ValleyPage() {
               >
                 <option value="" disabled>SELECT PROJECT</option>
                 {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id} className="bg-black text-white">{p.name}</option>
                 ))}
               </select>
             </div>
@@ -421,7 +425,7 @@ export default function ValleyPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
-      <main className="max-w-screen-2xl mx-auto px-4 md:px-12 py-12">
+      <main className="w-full px-4 md:px-8 py-8">
         {renderCurrentView()}
       </main>
       {isLocked && <DailyCheckIn onUnlock={handleUnlock} />}

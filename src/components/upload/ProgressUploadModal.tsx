@@ -25,7 +25,7 @@ export function ProgressUploadModal({
     trigger
 }: ProgressUploadModalProps) {
     const [open, setOpen] = useState(false)
-    const [step, setStep] = useState<'details' | 'upload'>('details')
+    // const [step, setStep] = useState<'details' | 'upload'>('details')
     const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
     const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
@@ -91,7 +91,7 @@ export function ProgressUploadModal({
     }
 
     const resetForm = () => {
-        setStep('details')
+        // setStep('details')
         setUploadResult(null)
         setTitle('')
         setContent('')

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { FileText, Video, Plus, Play, Pencil } from 'lucide-react'
+import { FileText, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Project, Channel, Block, ProjectStatus, Post } from '@/types'
 import { getChannels, getBlocks, updateProject, getPosts } from '@/lib/supabase/queries'
@@ -17,25 +17,26 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   const [blocks, setBlocks] = useState<Block[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [playingVideo, setPlayingVideo] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  // const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? 'planning')
-  const statusClass = (s: ProjectStatus) => {
-    switch (s) {
-      case 'active': return 'bg-green-500/15 text-green-700 dark:text-green-400'
-      case 'planning': return 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
-      case 'completed': return 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
-      case 'paused': return 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-300'
-      default: return 'bg-muted text-foreground'
-    }
-  }
+  const [showAllReels, setShowAllReels] = useState(false)
+  // const statusClass = (s: ProjectStatus) => {
+  //   switch (s) {
+  //     case 'active': return 'bg-green-500/15 text-green-700 dark:text-green-400'
+  //     case 'planning': return 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
+  //     case 'completed': return 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
+  //     case 'paused': return 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-300'
+  //     default: return 'bg-muted text-foreground'
+  //   }
+  // }
 
   useEffect(() => {
     if (project) setStatus(project.status)
-  }, [project?.id, project?.status])
+  }, [project])
 
   const loadData = async () => {
     if (!project?.id) return
-    setLoading(true)
+    // setLoading(true)
     const [chans, projectPosts] = await Promise.all([
       getChannels(project.id),
       getPosts(20, 0, project.id)
@@ -44,11 +45,12 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     setPosts(projectPosts)
     const allBlocks = await Promise.all(chans.map((c) => getBlocks(c.id)))
     setBlocks(allBlocks.flat())
-    setLoading(false)
+    // setLoading(false)
   }
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id])
 
   const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -140,16 +142,26 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
 
               return (
                 <div className="space-y-6">
-                  <h3 className="text-xs uppercase tracking-[0.2em] opacity-50">The Reel</h3>
-                  <div className="flex gap-8 overflow-x-auto pb-8 -mx-4 px-4 md:-mx-12 md:px-12 no-scrollbar snap-x">
-                    {videos.map((item, i) => {
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-xs uppercase tracking-[0.2em] opacity-50">The Reel</h3>
+                    {videos.length > 3 && (
+                      <button
+                        onClick={() => setShowAllReels(!showAllReels)}
+                        className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                      >
+                        {showAllReels ? 'Show Less' : 'View All'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {videos.slice(0, showAllReels ? undefined : 3).map((item) => {
                       const isPost = 'mediaUrl' in item
                       const src = isPost ? (item as Post).mediaUrl : (item as Block).content
-                      // Fallback for block content if it's not a direct URL (though for video blocks it usually is)
                       if (!src) return null
 
                       return (
-                        <div key={item.id} className="snap-center shrink-0 w-[280px] md:w-[320px] aspect-[9/16] bg-neutral-100 dark:bg-neutral-900 relative group overflow-hidden rounded-xl">
+                        <div key={item.id} className="aspect-[9/16] bg-neutral-100 dark:bg-neutral-900 relative group overflow-hidden">
                           <video
                             src={src}
                             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
@@ -351,6 +363,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                               </div>
                             )
                           ) : post.mediaType === 'image' ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={post.mediaUrl} alt="" className="w-full h-auto max-h-[85vh] object-contain mx-auto" />
                           ) : (
                             <div className="py-32 flex flex-col items-center justify-center text-neutral-500">

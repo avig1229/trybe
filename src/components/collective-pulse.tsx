@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { Post, Project } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
+// import { Input } from '@/components/ui/input'
 import {
   Heart,
   MessageSquare,
@@ -33,7 +33,7 @@ interface CollectivePulseProps {
 
 export function CollectivePulse({
   posts,
-  projects,
+  // projects,
   onCreatePost,
   onLikePost,
   onCommentPost,

@@ -3,7 +3,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client'
-import { validateFile, FileValidationResult, FileMetadata } from './validation'
+import { validateFile, FileMetadata } from './validation'
 
 export interface UploadOptions {
   bucket: string
@@ -77,12 +77,13 @@ export async function uploadFile(options: UploadOptions): Promise<UploadResult> 
       .upload(path, file, {
         cacheControl: '3600',
         upsert: false,
-        onUploadProgress: (progress: any) => {
+        onUploadProgress: (progress: { loaded: number; total: number }) => {
           if (onProgress) {
             const percentage = (progress.loaded / progress.total) * 100
             onProgress(percentage)
           }
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
 
     if (error) {
@@ -127,8 +128,7 @@ export async function uploadFile(options: UploadOptions): Promise<UploadResult> 
 export async function uploadFileChunked(
   options: ChunkedUploadOptions
 ): Promise<UploadResult> {
-  const { bucket, path, file, onProgress, chunkSize = 5 * 1024 * 1024, validate = true } = options
-  const supabase = createClient()
+  const { file, chunkSize = 5 * 1024 * 1024, validate = true } = options
 
   // Validate file if requested
   if (validate) {
@@ -148,8 +148,8 @@ export async function uploadFileChunked(
   }
 
   try {
-    const totalChunks = Math.ceil(file.size / chunkSize)
-    let uploadedBytes = 0
+    // const totalChunks = Math.ceil(file.size / chunkSize)
+    // const uploadedBytes = 0
 
     // Note: Supabase Storage doesn't natively support chunked uploads
     // This is a placeholder for future implementation or using a different approach
@@ -295,7 +295,7 @@ export async function fileExists(bucket: string, path: string): Promise<boolean>
     }
 
     return data && data.length > 0
-  } catch (error) {
+  } catch {
     return false
   }
 }

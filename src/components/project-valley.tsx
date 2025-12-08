@@ -4,20 +4,17 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { 
-  Plus, 
-  FolderOpen, 
-  Grid3X3, 
-  List, 
-  Filter,
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Plus,
+  FolderOpen,
+  Grid3X3,
+  List,
   Search,
   Trash2,
-  Eye,
   EyeOff,
   Users,
   Calendar,
-  Tag,
   ArrowRight
 } from 'lucide-react'
 import { Project, ProjectStatus, ProjectView } from '@/types'
@@ -33,11 +30,11 @@ interface ProjectValleyProps {
   error?: string
 }
 
-export function ProjectValley({ 
-  projects, 
-  onCreateProject, 
-  onEditProject, 
-  onDeleteProject, 
+export function ProjectValley({
+  projects,
+  onCreateProject,
+  onEditProject,
+  onDeleteProject,
   onViewProject,
   loading = false,
   error = ''
@@ -49,8 +46,8 @@ export function ProjectValley({
   const filteredProjects = projects.filter(project => {
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     return matchesStatus && matchesSearch
   })
 
@@ -69,7 +66,7 @@ export function ProjectValley({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div 
+            <div
               className={cn(
                 "w-3 h-3 rounded-full",
                 project.color || 'bg-neutral-900'
@@ -121,7 +118,7 @@ export function ProjectValley({
           </CardDescription>
         )}
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         {/* Tags */}
         {project.tags && project.tags.length > 0 && (
@@ -164,9 +161,9 @@ export function ProjectValley({
         </div>
 
         {/* Action Button */}
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="w-full mt-3 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={() => onViewProject(project)}
         >
@@ -236,7 +233,7 @@ export function ProjectValley({
             />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 border border-input rounded-md">
             <Button
@@ -297,7 +294,7 @@ export function ProjectValley({
             <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <CardTitle className="mb-2">No projects found</CardTitle>
             <CardDescription className="mb-4">
-              {searchQuery || statusFilter !== 'all' 
+              {searchQuery || statusFilter !== 'all'
                 ? 'Try adjusting your search or filters'
                 : 'Create your first project to get started with organizing your creative work'
               }
@@ -313,8 +310,8 @@ export function ProjectValley({
       ) : (
         <div className={cn(
           "gap-6",
-          viewMode === 'grid' 
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
+          viewMode === 'grid'
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
             : "space-y-4"
         )}>
           {filteredProjects.map((project) => (
@@ -336,7 +333,7 @@ export function ProjectValley({
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
@@ -348,7 +345,7 @@ export function ProjectValley({
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
@@ -360,7 +357,7 @@ export function ProjectValley({
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">

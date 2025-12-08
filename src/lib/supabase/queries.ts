@@ -314,10 +314,10 @@ type DbPost = {
   view_count: number
   created_at: string
   updated_at: string
-  user?: any
-  project?: any
-  tribe?: any
-  [key: string]: any
+  user?: Profile
+  project?: Project
+  tribe?: Tribe
+  [key: string]: unknown
 }
 
 function mapPostFromDb(row: DbPost): Post {
@@ -391,6 +391,7 @@ export async function getPosts(limit = 20, offset = 0, projectId?: string): Prom
 
 export async function createPost(post: Partial<Post>): Promise<Post | null> {
   // Map camelCase to snake_case
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dbPost: any = { ...post }
   if (post.userId) { dbPost.user_id = post.userId; delete dbPost.userId }
   if (post.projectId) { dbPost.project_id = post.projectId; delete dbPost.projectId }
@@ -430,6 +431,7 @@ export async function createPost(post: Partial<Post>): Promise<Post | null> {
 
 export async function updatePost(postId: string, updates: Partial<Post>): Promise<Post | null> {
   // Map camelCase to snake_case
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dbPost: any = { ...updates }
   if (updates.userId) { dbPost.user_id = updates.userId; delete dbPost.userId }
   if (updates.projectId) { dbPost.project_id = updates.projectId; delete dbPost.projectId }

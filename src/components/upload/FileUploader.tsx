@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Upload, X, File as FileIcon, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, X, File as FileIcon, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
@@ -27,8 +27,8 @@ export function FileUploader({
     bucket = 'project-files',
     path = '',
     userId,
-    projectId,
-    postId,
+    // projectId,
+    // postId,
     accept,
     maxSize,
     className

@@ -85,7 +85,7 @@ export function ContributionGraph({ userId }: { userId: string }) {
     const startDayOfWeek = firstDayOfMonth.getDay() // 0 = Sunday
 
     // Create grid cells (padding + days)
-    const cells = []
+    const cells: (ContributionDay | null)[] = []
 
     // Add padding for start of week
     for (let i = 0; i < startDayOfWeek; i++) {
@@ -105,8 +105,8 @@ export function ContributionGraph({ userId }: { userId: string }) {
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
                 {/* Day Headers (Optional, keeping minimal for now) */}
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-                    <div key={d} className="text-[8px] text-center opacity-30 py-1">{d}</div>
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                    <div key={i} className="text-[8px] text-center opacity-30 py-1">{d}</div>
                 ))}
 
                 {cells.map((day, i) => {

@@ -4,22 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+// import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+// import { Badge } from '@/components/ui/badge'
 import {
   LayoutDashboard,
   Mountain,
-  Heart,
-  Users,
-  Search,
-  Bell,
-  Plus,
-  User,
-  LogOut,
-  Settings,
   Sun,
-  Moon
+  Moon,
+  Plus
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { View } from '@/types'
@@ -85,8 +78,8 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                     key={item.id}
                     onClick={() => onViewChange(item.id)}
                     className={cn(
-                      "text-xs font-medium tracking-[0.2em] uppercase transition-opacity hover:opacity-100",
-                      isActive ? "opacity-100" : "opacity-40"
+                      "text-xs font-bold tracking-[0.2em] uppercase transition-all px-2 py-1",
+                      isActive ? "bg-black text-white dark:bg-white dark:text-black" : "opacity-50 hover:opacity-100"
                     )}
                   >
                     {item.label}
@@ -116,9 +109,9 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity"
               >
-                <Avatar className="h-8 w-8 rounded-none">
+                <Avatar className="h-8 w-8 rounded-none ring-1 ring-transparent hover:ring-current transition-all">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="rounded-none bg-neutral-100 dark:bg-neutral-800 text-xs">
+                  <AvatarFallback className="rounded-none bg-neutral-100 dark:bg-neutral-900 text-xs font-bold">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -126,14 +119,14 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
 
               {/* User Dropdown Menu - Minimal */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-4 w-56 bg-background border border-neutral-200 dark:border-neutral-800 p-2 shadow-xl z-50">
-                  <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 mb-2">
-                    <p className="text-sm font-medium truncate">{profile?.username || user?.email}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 mt-1">Creator</p>
+                <div className="absolute right-0 mt-4 w-56 bg-background border border-neutral-200 dark:border-neutral-800 p-0 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-4 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                    <p className="text-sm font-bold truncate">{profile?.username || user?.email}</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-50 mt-1">Creator</p>
                   </div>
 
                   <button
-                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    className="w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover-invert transition-all"
                     onClick={() => {
                       setShowUserMenu(false)
                       const uname = profile?.username || user?.email?.split('@')[0] || user?.id
@@ -144,14 +137,14 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                   </button>
 
                   <button
-                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors"
+                    className="w-full text-left px-4 py-3 text-xs uppercase tracking-widest hover-invert transition-all"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Settings
                   </button>
 
                   <button
-                    className="w-full text-left px-4 py-2 text-xs uppercase tracking-widest text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                    className="w-full text-left px-4 py-3 text-xs uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-all"
                     onClick={handleSignOut}
                   >
                     Sign Out

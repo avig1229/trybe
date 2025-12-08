@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getProjects, getChannels, getBlocks } from '@/lib/supabase/queries'
 import { Project, Channel, Block } from '@/types'
-import { ArrowLeft, Target, FileText, Video, Plus, X } from 'lucide-react'
+import { ArrowLeft, Target, FileText, Video, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +21,7 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
-  const [channels, setChannels] = useState<Channel[]>([])
+  // const [channels, setChannels] = useState<Channel[]>([])
   const [blocks, setBlocks] = useState<Block[]>([])
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [loading, setLoading] = useState(true)
@@ -34,7 +34,7 @@ export default function ProjectDetailPage() {
         // Load all projects for sidebar
         const projs = await getProjects(user.id)
         setProjects(projs)
-        
+
         // Find current project
         const current = projs.find(p => p.id === projectId)
         if (!current) {
@@ -45,8 +45,8 @@ export default function ProjectDetailPage() {
 
         // Load channels and blocks for resources
         const chans = await getChannels(projectId)
-        setChannels(chans)
-        
+        // setChannels(chans)
+
         // Load blocks from all channels
         const allBlocks = await Promise.all(
           chans.map(c => getBlocks(c.id))
@@ -78,13 +78,13 @@ export default function ProjectDetailPage() {
 
   const totalResources = blocks.length
   const progressUpdates = 0 // TODO: count from video posts
-  
+
   // Calculate days active safely
-  const createdAt = project.createdAt instanceof Date 
-    ? project.createdAt 
+  const createdAt = project.createdAt instanceof Date
+    ? project.createdAt
     : new Date(project.createdAt)
-  const daysActive = isNaN(createdAt.getTime()) 
-    ? 0 
+  const daysActive = isNaN(createdAt.getTime())
+    ? 0
     : Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
 
   return (
@@ -94,7 +94,7 @@ export default function ProjectDetailPage() {
         <div className="p-6">
           <h2 className="text-lg font-semibold mb-1">My Projects</h2>
           <p className="text-sm text-muted-foreground mb-4">Your creative portfolio</p>
-          
+
           <div className="space-y-2">
             {projects.map((p) => (
               <button
@@ -102,8 +102,8 @@ export default function ProjectDetailPage() {
                 onClick={() => router.push(`/valley/${p.id}`)}
                 className={cn(
                   "w-full text-left p-4 rounded-lg transition-colors",
-                  p.id === projectId 
-                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white" 
+                  p.id === projectId
+                    ? "bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white"
                     : "hover:bg-muted"
                 )}
               >
@@ -134,8 +134,8 @@ export default function ProjectDetailPage() {
         <div className="max-w-7xl mx-auto p-8">
           {/* Header */}
           <div className="mb-8">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.push('/valley')}
               className="mb-4 -ml-2"
             >
@@ -253,7 +253,7 @@ export default function ProjectDetailPage() {
                   <h2 className="text-xl font-semibold">Recent Progress</h2>
                   <Button variant="ghost" size="sm">View All</Button>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {totalResources === 0 ? (
                     <Card className="col-span-2 text-center py-12">

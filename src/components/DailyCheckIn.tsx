@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Project } from '@/types'
 import { getProjects, createPost } from '@/lib/supabase/queries'
 import { useAuth } from '@/contexts/AuthContext'
@@ -8,10 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { UploadResult, uploadFile } from '@/lib/storage/upload'
-import { Loader2, Lock, CheckCircle2, AlertCircle, Upload } from 'lucide-react'
+import { Loader2, Lock, AlertCircle, Upload, CheckCircle2 } from 'lucide-react'
 
 export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
     const { user } = useAuth()
+    const router = useRouter()
     const [projects, setProjects] = useState<Project[]>([])
     const [selectedProjectId, setSelectedProjectId] = useState<string>('')
     const [loading, setLoading] = useState(true)
@@ -21,6 +23,11 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
     const [duration, setDuration] = useState<number>(0)
     const [error, setError] = useState<string | null>(null)
 
+    // Background upload state
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [backgroundUploadComplete, setBackgroundUploadComplete] = useState<UploadResult | null>(null)
+    const uploadPromiseRef = useRef<Promise<UploadResult> | null>(null)
+
     // New fields
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
@@ -28,15 +35,46 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
     useEffect(() => {
         const loadProjects = async () => {
             if (!user) return
-            const data = await getProjects(user.id)
-            setProjects(data.filter(p => p.status === 'active' || p.status === 'planning'))
-            if (data.length > 0) {
-                setSelectedProjectId(data[0].id)
+            try {
+                console.log('DailyCheckIn: Loading projects...')
+                const data = await getProjects(user.id)
+                setProjects(data.filter(p => p.status === 'active' || p.status === 'planning'))
+                if (data.length > 0) {
+                    setSelectedProjectId(data[0].id)
+                }
+            } catch (err) {
+                console.error('DailyCheckIn: Failed to load projects', err)
+                setError('Failed to load projects. Please try refreshing.')
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
         loadProjects()
     }, [user])
+
+    const startBackgroundUpload = (file: File) => {
+        if (!user) return
+
+        setUploadProgress(0)
+        setBackgroundUploadComplete(null)
+
+        const promise = uploadFile({
+            bucket: 'project-files',
+            path: `daily/${user.id}/${Date.now()}-${file.name}`,
+            file: file,
+            onProgress: (progress) => setUploadProgress(progress)
+        })
+
+        uploadPromiseRef.current = promise
+
+        promise.then(result => {
+            if (!result.error) {
+                setBackgroundUploadComplete(result)
+            }
+        }).catch(err => {
+            console.error('Background upload failed:', err)
+        })
+    }
 
     const handleFileSelect = (file: File) => {
         setError(null)
@@ -59,6 +97,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                 setError('Video is too short. Minimum 15 seconds.')
             } else if (video.duration > 25) {
                 setError('Video is too long. Maximum 25 seconds.')
+            } else {
+                // Valid video, start background upload
+                startBackgroundUpload(file)
             }
         }
         video.src = url
@@ -78,6 +119,10 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                 mediaType: 'video',
                 isFeatured: false
             })
+
+            // Refresh data and redirect
+            router.refresh()
+            router.push('/valley')
             onUnlock()
         } catch (err) {
             console.error('Failed to create daily post:', err)
@@ -190,6 +235,16 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className={`w-2 h-2 rounded-full ${isValidDuration ? 'bg-green-500' : 'bg-red-500'}`} />
                                         <span className="text-xs font-medium">{duration.toFixed(1)}s</span>
+                                        {uploadProgress > 0 && uploadProgress < 100 && (
+                                            <span className="text-[10px] text-neutral-400 ml-2">
+                                                Uploading: {Math.round(uploadProgress)}%
+                                            </span>
+                                        )}
+                                        {backgroundUploadComplete && (
+                                            <span className="text-[10px] text-green-400 ml-2 flex items-center gap-1">
+                                                <CheckCircle2 className="h-3 w-3" /> Ready
+                                            </span>
+                                        )}
                                     </div>
                                     <h3 className="font-bold text-lg leading-tight line-clamp-2">{title || 'Untitled Update'}</h3>
                                     <p className="text-xs text-neutral-300 line-clamp-2 mt-1">{description || 'No description'}</p>
@@ -205,6 +260,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                         setVideoPreview(null)
                                         setDuration(0)
                                         setError(null)
+                                        setUploadProgress(0)
+                                        setBackgroundUploadComplete(null)
+                                        uploadPromiseRef.current = null
                                     }}
                                 >
                                     Change
@@ -229,11 +287,22 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                             onClick={async () => {
                                 setUploading(true)
                                 try {
-                                    const result = await uploadFile({
-                                        bucket: 'project-files',
-                                        path: `daily/${user!.id}/${Date.now()}-${videoFile!.name}`,
-                                        file: videoFile!
-                                    })
+                                    let result: UploadResult
+
+                                    // Check if background upload is already done
+                                    if (backgroundUploadComplete) {
+                                        result = backgroundUploadComplete
+                                    } else if (uploadPromiseRef.current) {
+                                        // Wait for existing upload
+                                        result = await uploadPromiseRef.current
+                                    } else {
+                                        // Start new upload (fallback)
+                                        result = await uploadFile({
+                                            bucket: 'project-files',
+                                            path: `daily/${user!.id}/${Date.now()}-${videoFile!.name}`,
+                                            file: videoFile!
+                                        })
+                                    }
 
                                     if (result.error) {
                                         throw new Error(result.error)

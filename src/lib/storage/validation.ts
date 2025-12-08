@@ -53,7 +53,7 @@ export function getFileType(file: File): 'video' | 'document' | 'image' | 'audio
 
   for (const [type, config] of Object.entries(FILE_TYPES)) {
     if (
-      (config.extensions as any).includes(extension) ||
+      (config.extensions as readonly string[]).includes(extension) ||
       config.mimeTypes.some(mt => mimeType.includes(mt.split('/')[1]))
     ) {
       return type as 'video' | 'document' | 'image' | 'audio'
@@ -209,7 +209,7 @@ export async function validateFile(file: File): Promise<FileValidationResult> {
   let metadata: FileMetadata
   try {
     metadata = await extractFileMetadata(file)
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       error: 'Failed to extract file metadata',

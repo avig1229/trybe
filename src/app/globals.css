@@ -20,8 +20,8 @@
     --background: #000000;
     --foreground: #ffffff;
     --surface: #000000;
-    --muted: #1a1a1a;
-    --border: #333333;
+    --muted: #111111;
+    --border: #222222;
   }
 }
 
@@ -30,8 +30,8 @@
   --background: #000000;
   --foreground: #ffffff;
   --surface: #000000;
-  --muted: #1a1a1a;
-  --border: #333333;
+  --muted: #111111;
+  --border: #222222;
 }
 
 body {
@@ -64,4 +64,22 @@ body {
 
 .bg-muted {
   background-color: var(--muted);
+}
+
+/* Lebedev-style interactive utilities */
+.hover-invert {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-invert:hover {
+  background-color: var(--foreground);
+  color: var(--background);
+}
+
+.border-premium {
+  border: 1px solid var(--border);
+}
+
+.dark .border-premium {
+  border-color: #222222;
 }
