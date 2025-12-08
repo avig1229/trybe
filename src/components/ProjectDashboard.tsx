@@ -277,12 +277,12 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
               )
             })()}
 
-            {/* 3. Project Notes & Stats */}
-            <div className="border-t border-black/10 dark:border-white/10 pt-12 flex flex-col md:flex-row gap-12 md:gap-24">
-              <div className="flex-1 space-y-6">
-                <h3 className="text-xs uppercase tracking-[0.2em] opacity-50">Project Notes</h3>
+            {/* 3. Project Notes */}
+            <div className="border-t border-black/10 dark:border-white/10 pt-12">
+              <div className="max-w-4xl mx-auto space-y-6">
+                <h3 className="text-xs uppercase tracking-[0.2em] opacity-50 text-center">Project Notes</h3>
                 <textarea
-                  className="w-full bg-transparent text-xl md:text-2xl font-light leading-relaxed resize-none focus:outline-none min-h-[150px] placeholder:text-neutral-200 p-0"
+                  className="w-full bg-transparent text-xl md:text-2xl font-light leading-relaxed resize-none focus:outline-none min-h-[150px] placeholder:text-neutral-200 p-0 text-center"
                   placeholder="Jot down your thoughts, direction, or manifesto for this project..."
                   value={project?.description || ''}
                   onChange={(e) => {
@@ -295,20 +295,6 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                     if (project) updateProject(project.id, { description: e.target.value })
                   }}
                 />
-              </div>
-              <div className="w-full md:w-64 space-y-8 shrink-0">
-                <div className="flex items-baseline justify-between border-b border-black/10 dark:border-white/10 pb-2">
-                  <span className="text-xs uppercase tracking-[0.2em] opacity-50">Resources</span>
-                  <span className="text-2xl font-light">{totalResources}</span>
-                </div>
-                <div className="flex items-baseline justify-between border-b border-black/10 dark:border-white/10 pb-2">
-                  <span className="text-xs uppercase tracking-[0.2em] opacity-50">Updates</span>
-                  <span className="text-2xl font-light">{progressUpdates}</span>
-                </div>
-                <div className="flex items-baseline justify-between border-b border-black/10 dark:border-white/10 pb-2">
-                  <span className="text-xs uppercase tracking-[0.2em] opacity-50">Days Active</span>
-                  <span className="text-2xl font-light">{daysActive}</span>
-                </div>
               </div>
             </div>
           </div>

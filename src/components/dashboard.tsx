@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { Project, Post, Tribe, Profile } from '@/types'
 import { cn } from '@/lib/utils'
+import { ContributionGraph } from '@/components/ContributionGraph'
 
 interface DashboardProps {
   profile: Profile
@@ -167,59 +168,76 @@ export function Dashboard({
         </Card>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Mountain className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-muted-foreground">Projects</span>
-            </div>
-            <div className="text-2xl font-bold mt-1">{projects.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {activeProjects.length} active
-            </p>
+      {/* Stats and Contribution Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Daily Progress */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-green-500" />
+              Daily Progress
+            </CardTitle>
+            <CardDescription>Your contribution activity</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center pb-6">
+            <ContributionGraph userId={profile.id} />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-green-500" />
-              <span className="text-sm text-muted-foreground">Posts</span>
-            </div>
-            <div className="text-2xl font-bold mt-1">{posts.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalLikes} total likes
-            </p>
-          </CardContent>
-        </Card>
+        {/* Key Metrics */}
+        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Mountain className="h-4 w-4 text-blue-500" />
+                <span className="text-sm text-muted-foreground">Projects</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">{projects.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {activeProjects.length} active
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-purple-500" />
-              <span className="text-sm text-muted-foreground">Tribes</span>
-            </div>
-            <div className="text-2xl font-bold mt-1">{myTribes.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Member of {myTribes.length} communities
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-muted-foreground">Posts</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">{posts.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {totalLikes} total likes
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-orange-500" />
-              <span className="text-sm text-muted-foreground">Views</span>
-            </div>
-            <div className="text-2xl font-bold mt-1">{totalViews}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total profile views
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-purple-500" />
+                <span className="text-sm text-muted-foreground">Tribes</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">{myTribes.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Member of {myTribes.length} communities
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-orange-500" />
+                <span className="text-sm text-muted-foreground">Views</span>
+              </div>
+              <div className="text-2xl font-bold mt-1">{totalViews}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total profile views
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

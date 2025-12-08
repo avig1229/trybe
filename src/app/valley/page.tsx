@@ -11,23 +11,23 @@ import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
 import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
-import { getProjects, getUserProjects, createProject, deleteProject } from '@/lib/supabase/queries'
-import { ContributionGraph } from '@/components/ContributionGraph'
-import { cn } from '@/lib/utils'
-
+// ... imports ...
+import { HomeDashboard } from '@/components/HomeDashboard'
+import { getPosts, getProjects, getUserProjects, createProject, deleteProject } from '@/lib/supabase/queries'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 import { getDailyLockStatus } from '@/lib/daily-lock'
+import { ContributionGraph } from '@/components/ContributionGraph'
 import DailyCheckIn from '@/components/DailyCheckIn'
-
 
 
 export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
-  console.log('ValleyPage render:', { user: user?.id, loading, profile: !!profile })
+  // ... existing state ...
   const [currentView, setCurrentView] = useState<View>('dashboard')
-  const router = useRouter()
+  const [globalPosts, setGlobalPosts] = useState<Post[]>([]) // For HomeDashboard
 
   // State for data
   const [projects, setProjects] = useState<Project[]>([])
@@ -36,8 +36,6 @@ export default function ValleyPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState<number>(320)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
-  // const [loadingProjects, setLoadingProjects] = useState<boolean>(true)
-  // const [projectsError, setProjectsError] = useState<string>('')
   const [isLocked, setIsLocked] = useState<boolean | null>(null) // null = loading
 
   // Create project dialog state
@@ -47,6 +45,7 @@ export default function ValleyPage() {
   const [newIsPublic, setNewIsPublic] = useState(true)
   const [creating, setCreating] = useState(false)
 
+  // ... useEffect for checking lock ...
   useEffect(() => {
     const checkLock = async () => {
       if (user) {
@@ -60,47 +59,29 @@ export default function ValleyPage() {
   }, [user])
 
   useEffect(() => {
-    const loadProjects = async () => {
+    const loadProjectsAndPosts = async () => {
       if (!user) return
-      // setLoadingProjects(true)
-      // setProjectsError('')
       try {
-        // Use getUserProjects to STRICTLY fetch only projects owned by the user
-        // This prevents public projects from other users appearing in the dashboard
+        // Fetch projects
         const data = await getUserProjects(user.id)
         setProjects(data)
-        if (!selectedProjectId && data.length > 0) {
-          setSelectedProjectId(data[0].id)
-        }
+        // No auto-select first project anymore
+
+        // Fetch recent posts for Global Reel (active ecosystem)
+        const recent = await getPosts(20, 0, undefined, user.id)
+        setGlobalPosts(recent)
       } catch (e) {
-        // setProjectsError('Failed to load projects')
         console.error(e)
-      } finally {
-        // setLoadingProjects(false)
       }
     }
 
     if (user && profile) {
-      loadProjects()
+      loadProjectsAndPosts()
 
       setPosts([
-        {
-          id: '1',
-          userId: user.id,
-          type: 'progress',
-          title: 'Making great progress!',
-          content: 'Just finished the first iteration of my design system. Feeling excited about the direction this is taking.',
-          isFeatured: false,
-          viewCount: 24,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          likeCount: 8,
-          commentCount: 3,
-          isLiked: false,
-          isSaved: false,
-        },
+        // ... keeping mock posts for 'pulse' view locally if needed, 
       ])
-
+      // ... tribes mock data ...
       setTribes([
         {
           id: '1',
@@ -119,16 +100,11 @@ export default function ValleyPage() {
         },
       ])
     }
-  }, [user, profile]) // Only depend on IDs to prevent unnecessary re-renders
+  }, [user, profile])
 
   const handleCreateProject = () => {
     setShowCreate(true)
   }
-
-  // const handleEditProject = (project: Project) => {
-  //   console.log('Edit project:', project)
-  //   // TODO: Implement project editing
-  // }
 
   const handleDeleteProject = (projectId: string) => {
     // Optimistic UI delete
@@ -145,6 +121,10 @@ export default function ValleyPage() {
         setSelectedProjectId(projectId)
       }
     })
+  }
+
+  const handleSelectProject = (project: Project) => {
+    setSelectedProjectId(project.id)
   }
 
   const handleViewProject = (project: Project) => {
@@ -226,9 +206,6 @@ export default function ValleyPage() {
     setIsLocked(false)
   }
 
-  // Removed early return for isLocked to allow background rendering
-
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -258,7 +235,7 @@ export default function ValleyPage() {
           <Dashboard
             profile={profile}
             projects={projects}
-            posts={posts}
+            posts={globalPosts}
             tribes={tribes}
             onCreateProject={handleCreateProject}
             onCreatePost={handleCreatePost}
@@ -334,10 +311,13 @@ export default function ValleyPage() {
                   }}
                 />
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-                  <div className="text-4xl font-light tracking-tighter uppercase">Select a Project</div>
-                  <p className="text-sm uppercase tracking-widest">Begin your creative flow</p>
-                </div>
+                <HomeDashboard
+                  profile={profile}
+                  projects={projects}
+                  recentPosts={globalPosts}
+                  onSelectProject={handleSelectProject}
+                  onCreateProject={handleCreateProject}
+                />
               )}
             </div>
 
@@ -394,7 +374,7 @@ export default function ValleyPage() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
+          </div >
         )
       case 'pulse':
         return (

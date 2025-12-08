@@ -1,5 +1,5 @@
 import { createClient } from './client'
-import { Profile, Project, Tribe, Post, Block, Channel, PostType } from '@/types'
+import { Profile, Project, Tribe, Post, Block, Channel, PostType, BlockType } from '@/types'
 
 const supabase = createClient()
 
@@ -262,10 +262,65 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
   })) as Tribe[]
 }
 
+// Helpers to map between DB snake_case and app camelCase for Tribes
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type DbTribe = {
+  id: string
+  name: string
+  slug: string
+  description: string
+  cover_image_url?: string | null
+  icon_url?: string | null
+  creator_id: string
+  is_public: boolean
+  member_count: number
+  post_count: number
+  tags?: string[] | null
+  rules?: string[] | null
+  created_at: string
+  updated_at: string
+  [key: string]: unknown
+}
+
+function mapTribeFromDb(row: DbTribe): Tribe {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    coverImageUrl: row.cover_image_url || undefined,
+    iconUrl: row.icon_url || undefined,
+    creatorId: row.creator_id,
+    isPublic: row.is_public,
+    memberCount: row.member_count,
+    postCount: row.post_count,
+    tags: row.tags || undefined,
+    rules: row.rules || undefined,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    // Relations to be populated separately or casted
+  }
+}
+
+function mapTribeToDb(t: Partial<Tribe>): Partial<DbTribe> {
+  const db: Partial<DbTribe> = {}
+  if (t.id) db.id = t.id
+  if (t.name) db.name = t.name
+  if (t.slug) db.slug = t.slug
+  if (t.description) db.description = t.description
+  if (t.coverImageUrl) db.cover_image_url = t.coverImageUrl
+  if (t.iconUrl) db.icon_url = t.iconUrl
+  if (t.creatorId) db.creator_id = t.creatorId
+  if (t.isPublic !== undefined) db.is_public = t.isPublic
+  if (t.tags) db.tags = t.tags
+  if (t.rules) db.rules = t.rules
+  return db
+}
+
 export async function createTribe(tribe: Partial<Tribe>): Promise<Tribe | null> {
   const { data, error } = await supabase
     .from('tribes')
-    .insert(tribe)
+    .insert(mapTribeToDb(tribe))
     .select(`
       *,
       creator:profiles(*)
@@ -277,7 +332,11 @@ export async function createTribe(tribe: Partial<Tribe>): Promise<Tribe | null> 
     return null
   }
 
-  return data as Tribe
+  const tribeData = data as DbTribe & { creator: Profile }
+  return {
+    ...mapTribeFromDb(tribeData),
+    creator: tribeData.creator
+  } as Tribe
 }
 
 export async function joinTribe(userId: string, tribeId: string): Promise<boolean> {
@@ -361,7 +420,7 @@ function mapPostFromDb(row: DbPost): Post {
   }
 }
 
-export async function getPosts(limit = 20, offset = 0, projectId?: string): Promise<Post[]> {
+export async function getPosts(limit = 20, offset = 0, projectId?: string, userId?: string): Promise<Post[]> {
   let query = supabase
     .from('posts')
     .select(`
@@ -375,6 +434,10 @@ export async function getPosts(limit = 20, offset = 0, projectId?: string): Prom
 
   if (projectId) {
     query = query.eq('project_id', projectId)
+  }
+
+  if (userId) {
+    query = query.eq('user_id', userId)
   }
 
   const { data, error } = await query
@@ -551,6 +614,44 @@ export async function unlikePost(userId: string, postId: string): Promise<boolea
 }
 
 // Channel and Block queries
+// Helpers to map between DB snake_case and app camelCase for Channels
+type DbChannel = {
+  id: string
+  project_id: string
+  name: string
+  description?: string | null
+  color: string
+  order_index: number
+  created_at: string
+  updated_at: string
+  [key: string]: unknown
+}
+
+function mapChannelFromDb(row: DbChannel): Channel {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    name: row.name,
+    description: row.description || undefined,
+    color: row.color,
+    orderIndex: row.order_index,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    blockCount: (row.blocks as unknown as unknown[])?.length || 0
+  }
+}
+
+function mapChannelToDb(c: Partial<Channel>): Partial<DbChannel> {
+  const db: Partial<DbChannel> = {}
+  if (c.id) db.id = c.id
+  if (c.projectId) db.project_id = c.projectId
+  if (c.name) db.name = c.name
+  if (c.description) db.description = c.description
+  if (c.color) db.color = c.color
+  if (c.orderIndex !== undefined) db.order_index = c.orderIndex
+  return db
+}
+
 export async function getChannels(projectId: string): Promise<Channel[]> {
   const { data, error } = await supabase
     .from('channels')
@@ -566,17 +667,17 @@ export async function getChannels(projectId: string): Promise<Channel[]> {
     return []
   }
 
-  return (data || []).map(channel => ({
-    ...channel,
-    blockCount: channel.blocks?.length || 0,
-  })) as Channel[]
+  return (data || []).map(row => mapChannelFromDb(row as DbChannel))
 }
 
 export async function createChannel(channel: Partial<Channel>): Promise<Channel | null> {
   const { data, error } = await supabase
     .from('channels')
-    .insert(channel)
-    .select()
+    .insert(mapChannelToDb(channel)) // Use the mapper!
+    .select(`
+      *,
+      blocks(*)
+    `)
     .single()
 
   if (error) {
@@ -584,7 +685,7 @@ export async function createChannel(channel: Partial<Channel>): Promise<Channel 
     return null
   }
 
-  return data as Channel
+  return mapChannelFromDb(data as DbChannel)
 }
 
 export async function deleteChannel(channelId: string): Promise<boolean> {
@@ -601,6 +702,49 @@ export async function deleteChannel(channelId: string): Promise<boolean> {
   return true
 }
 
+// Helpers to map between DB snake_case and app camelCase for Blocks
+type DbBlock = {
+  id: string
+  channel_id: string
+  type: BlockType
+  title?: string | null
+  content: string
+  description?: string | null
+  metadata?: Record<string, unknown> | null
+  order_index: number
+  created_at: string
+  updated_at: string
+  [key: string]: unknown
+}
+
+function mapBlockFromDb(row: DbBlock): Block {
+  return {
+    id: row.id,
+    channelId: row.channel_id,
+    type: row.type,
+    title: row.title || undefined,
+    content: row.content,
+    description: row.description || undefined,
+    metadata: (row.metadata as Record<string, unknown>) || undefined,
+    orderIndex: row.order_index,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  }
+}
+
+function mapBlockToDb(b: Partial<Block>): Partial<DbBlock> {
+  const db: Partial<DbBlock> = {}
+  if (b.id) db.id = b.id
+  if (b.channelId) db.channel_id = b.channelId
+  if (b.type) db.type = b.type
+  if (b.title) db.title = b.title
+  if (b.content) db.content = b.content
+  if (b.description) db.description = b.description
+  if (b.metadata) db.metadata = b.metadata
+  if (b.orderIndex !== undefined) db.order_index = b.orderIndex
+  return db
+}
+
 export async function getBlocks(channelId: string): Promise<Block[]> {
   const { data, error } = await supabase
     .from('blocks')
@@ -613,13 +757,13 @@ export async function getBlocks(channelId: string): Promise<Block[]> {
     return []
   }
 
-  return data as Block[]
+  return ((data || []) as unknown as DbBlock[]).map(mapBlockFromDb)
 }
 
 export async function createBlock(block: Partial<Block>): Promise<Block | null> {
   const { data, error } = await supabase
     .from('blocks')
-    .insert(block)
+    .insert(mapBlockToDb(block))
     .select()
     .single()
 
@@ -628,7 +772,7 @@ export async function createBlock(block: Partial<Block>): Promise<Block | null> 
     return null
   }
 
-  return data as Block
+  return mapBlockFromDb(data as DbBlock)
 }
 
 // Search functions

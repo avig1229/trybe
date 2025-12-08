@@ -28,9 +28,9 @@ export function ContributionGraph({ userId }: { userId: string }) {
 
             const { data: posts, error } = await supabase
                 .from('posts')
-                .select('created_at')
+                .select('created_at, type')
                 .eq('user_id', userId)
-                .eq('type', 'daily_update')
+                .in('type', ['daily_update', 'progress']) // Include progress posts
                 .gte('created_at', startDate.toISOString())
                 .lte('created_at', endDate.toISOString())
 
@@ -98,13 +98,14 @@ export function ContributionGraph({ userId }: { userId: string }) {
     return (
         <div className="w-full max-w-[280px]">
             {/* Month Label */}
-            <div className="text-[10px] uppercase tracking-widest opacity-50 mb-4">
-                {now.toLocaleString('default', { month: 'long' })}
+            <div className="text-[10px] uppercase tracking-widest opacity-50 mb-4 flex justify-between">
+                <span>{now.toLocaleString('default', { month: 'long' })}</span>
+                <span>{year}</span>
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
-                {/* Day Headers (Optional, keeping minimal for now) */}
+            <div className="grid grid-cols-7 gap-1.5">
+                {/* Day Headers */}
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
                     <div key={i} className="text-[8px] text-center opacity-30 py-1">{d}</div>
                 ))}
@@ -117,12 +118,13 @@ export function ContributionGraph({ userId }: { userId: string }) {
                             key={day.date}
                             title={`${day.date}: ${day.count} updates`}
                             className={cn(
-                                "aspect-square rounded-sm transition-colors",
-                                day.level === 0 && "bg-neutral-100 dark:bg-neutral-800",
-                                day.level === 1 && "bg-green-500/30 dark:bg-green-900",
-                                day.level === 2 && "bg-green-500/60 dark:bg-green-700",
+                                "aspect-square rounded-[1px] transition-all duration-300",
+                                // Dark Mode Colors (Green)
+                                day.level === 0 && "bg-neutral-100 dark:bg-neutral-900/50",
+                                day.level === 1 && "bg-green-300 dark:bg-green-900/40",
+                                day.level === 2 && "bg-green-400 dark:bg-green-700",
                                 day.level === 3 && "bg-green-500 dark:bg-green-500",
-                                day.level === 4 && "bg-green-600 dark:bg-green-400"
+                                day.level === 4 && "bg-green-600 dark:bg-green-300 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
                             )}
                         />
                     )
