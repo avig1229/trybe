@@ -47,10 +47,30 @@ During the implementation of media privacy, we encountered a critical RLS error 
 The initial design utilized standard list-views common in project management tools. We refactored this into the **"Global Reel" (Magazine Layout)** to prioritize discovery:
 *   **Visual-First Components (`src/components/collective-pulse.tsx`):** we transitioned from compact rows to immersive `Card` based layouts.
     *   **Contextual Badges:** Each post now prominently displays its origin (`Project: Name`, `Tribe: Name`) to give viewers immediate context.
-    *   **Rich Media Placeholders:** The layout reserves `aspect-video` slots for media, ensuring that video/image content is the primary hook, not text.
+    *   **Rich Media Placeholders:** The layout reserves `aspect-video` slots for media, ensuring that video and image content is the primary hook, not text.
     *   **Interaction Density:** Actions (Like, Comment, Save) were moved from a dropdown menu to a permanent, accessible toolbar at the bottom of each card to encourage engagement.
 
 ### Database Query Optimization (`performance-indexes.sql`)
 To support the "Magazine" layout's heavy read-load, we revised our SQL strategy:
 *   **Targeted Indexing:** We added specific B-Tree indexes on high-traffic foreign keys (`user_id`, `project_id`) and status columns (`is_public`). This reduces the query cost for the main feed from sequential scans to rapid index scans.
 *   **Full-Text Search:** Enabled `pg_trgm` (trigram) extensions and GIN indexes on `name` and `description` fields. This allows the search bar to handle fuzzy matching (e.g., finding "desgn" when searching for "design") extremely efficiently without external dependencies like Algolia.
+
+---
+
+## Phase 4: Challenges & Error Log
+A transparent record of technical hurdles encountered and resolved during development.
+
+### 1. The "Infinite Recursion" RLS Deadlock
+*   **The Error:** `infinite recursion detected in policy for relation "objects"`
+*   **Context:** Occurred when trying to secure file uploads by checking if a user was a "Tribe Member". The policy queried `tribe_memberships`, which itself had RLS policies that (incorrectly) tried to verify user identity via other tables, creating a closed loop.
+*   **The Solution (`fix_storage_policy.sql`):** Broke the circular dependency by simplifying storage policies to rely strictly on `auth.uid()` checks (Direct Ownership) rather than recursive relational checks.
+
+### 2. Schema Drift & Missing Relations
+*   **The Error:** `Could not find relationship 'profiles' for 'posts'`
+*   **Context:** Supabase/PostgREST failed to auto-detect the relationship between `posts` and `profiles` tables, preventing us from fetching user avatars with posts (`select(*, user:profiles(*))`).
+*   **The Solution (`fix_posts_relationship.sql`):** We manually executed a constraint update to explicitly define the Foreign Key relationship and forced a schema cache reload (`NOTIFY pgrst, 'reload config'`).
+
+### 3. Enum Constraint Violations
+*   **The Error:** `new row for relation "posts" violates check constraint "posts_type_check"`
+*   **Context:** We added the `daily_update` post type in the frontend application code but failed to update the database-level CHECK constraints, causing insertion failures for the "LoCommit" feature.
+*   **The Solution (`fix_post_type_constraint.sql`):** We wrote a migration to `DROP` the old constraint and `ADD` a comprehensive new one that included `daily_update` as a valid enum value.
