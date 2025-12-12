@@ -53,8 +53,10 @@ export default function ProjectList({
           <div
             key={p.id}
             className={cn(
-              'group flex items-center justify-between py-3 cursor-pointer transition-all duration-300 border-b border-transparent hover:border-neutral-800',
-              selectedProjectId === p.id ? 'opacity-100 pl-4 border-l-2 border-l-black dark:border-l-white border-b-neutral-800' : 'opacity-60 hover:opacity-100 hover:pl-2'
+              'group flex items-center justify-between py-3 cursor-pointer transition-all duration-300 border-b border-transparent hover:border-black dark:hover:border-white',
+              selectedProjectId === p.id
+                ? 'opacity-100 pl-4 border-l-2 border-l-black dark:border-l-white border-b-black/10 dark:border-b-white/10 text-black dark:text-white'
+                : 'opacity-60 hover:opacity-100 hover:pl-2'
             )}
             onClick={() => onSelect(p)}
           >

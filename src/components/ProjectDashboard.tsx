@@ -111,12 +111,12 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   const defaultChannelId = channels.length > 0 ? channels[0].id : ''
 
   return (
-    <div className="max-w-screen-2xl mx-auto px-4 md:px-12 py-16 space-y-20">
+    <div className="w-full max-w-full mx-auto px-4 md:px-8 py-12 space-y-16">
       {/* Header - Ultra Minimal */}
       <div className="flex flex-col gap-6">
-        <div className="flex items-baseline justify-between border-b border-black/10 dark:border-white/10 pb-8">
-          <h1 className="text-5xl md:text-8xl font-bold uppercase tracking-tighter leading-none">{project?.name}</h1>
-          <div className="flex items-center gap-6">
+        <div className="flex items-baseline justify-between border-b border-black/10 dark:border-white/10 pb-8 break-words">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tighter leading-none break-words max-w-full">{project?.name}</h1>
+          <div className="flex items-center gap-6 shrink-0 ml-4">
             <select
               value={status}
               onChange={handleStatusChange}
@@ -131,12 +131,12 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
             )} />
           </div>
         </div>
-        <p className="text-xl md:text-2xl font-light max-w-3xl leading-relaxed">{project?.description || 'No description provided.'}</p>
+        <p className="text-lg md:text-xl font-light max-w-3xl leading-relaxed">{project?.description || 'No description provided.'}</p>
       </div>
 
       {/* Navigation - Floating / Minimal */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md py-4 -mx-4 px-4 md:-mx-12 md:px-12 border-b border-transparent transition-all duration-500">
-        <div className="flex items-center gap-12 text-xs font-medium tracking-[0.2em] uppercase">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md py-4 -mx-4 px-4 md:-mx-8 md:px-8 border-b border-transparent transition-all duration-500 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-12 text-xs font-medium tracking-[0.2em] uppercase whitespace-nowrap">
           {(
             [
               { id: 'overview', label: 'Overview' },
