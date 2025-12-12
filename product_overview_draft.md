@@ -15,7 +15,22 @@ The data layer is built on **PostgreSQL**, utilizing a normalized schema designe
 
 ---
 
-## 6.2 Core Modules
+## 6.2 Key Technology Decisions
+
+### Why Next.js (Node.js Ecosystem)?
+The decision to use Next.js was driven by the need for a **hybrid application model**. Trybe requires the SEO benefits of server-side rendering for public profiles (so creators get discovered) combined with the highly interactive, "app-like" feel of a client-side dashboard for the deep work state. Next.js 14's App Router allows us to mix these paradigms seamlessly in the same codebase.
+
+### Why Supabase?
+As a solo developer building a complex social platform, infrastructure overhead is the enemy of progress. Supabase provides a cohesive "backend-in-a-box" (Auth, Database, Storage, Edge Functions) that eliminates the need to stitch together disparate AWS services. This drastically reduces context switching and accelerates the feedback loop between idea and implementation.
+
+### Why PostgreSQL?
+Early iterations of similar tools often rely on NoSQL (like MongoDB) for flexibility, but they suffer when data relationships become complex. Trybe's data model is strictly hierarchical (Project ➡ Channel ➡ Block). PostgreSQL is essential here because:
+1.  **Relational Integrity:** It enforces the structure of the "Valley," ensuring that orphaned blocks or broken links are impossible.
+2.  **Advanced Querying:** We need to perform complex joins, such as "Find all video blocks in public projects created by users who have posted a daily update today." This is efficient in SQL but computationally expensive in NoSQL.
+
+---
+
+## 6.3 Core Modules
 
 ### LoCommit: The Accountability Engine
 **Ideation:** The "LoCommit" (Low-friction Commit) engine addresses the core insight that creative blocks often stem from a lack of momentum rather than a lack of skill. I needed a "forcing function" akin to a corporate daily standup, but automated for the solo creator to prevent stagnation.
