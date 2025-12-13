@@ -27,6 +27,24 @@ The project moves beyond basic CRUD operations, demonstrating advanced relationa
     *   **GIN Indexes (Generalized Inverted Index):** Applied to `to_tsvector` fields for Full-Text Search. This shows capability in optimizing for specific access patterns (Read-heavy Dashboard queries).
     *   **Triggers:** The use of `CREATE TRIGGER update_updated_at_column` automates timestamp maintenance, moving logic from the application (imperative) to the database (declarative).
 
+## #cs162 - Advanced Datastores (SQL Functions)
+**Evidence in Codebase:**
+Beyond standard querying, the project utilizes PostgreSQL as a computational engine, not just a storage bucket.
+
+*   **Stored Procedures for Logic Encapsulation:**
+    The file `enhanced-schema.sql` defines custom PL/pgSQL functions like `search_projects(search_term)` and `search_tribes(search_term)`.
+    *   *Why:* Instead of fetching all rows and filtering in JavaScript (slow/memory-intensive), the logic lives close to the data.
+    *   *Mechanism:* These functions return a dynamic `TABLE` with a calculated `rank` score, encapsulating complex relevance scoring logic inside a clean RPC interface.
+
+*   **Full-Text Search Engine:**
+    We implemented a native search engine using `ts_vector` and `pg_trgm` (PostgreSQL Trigram Extension).
+    *   *Code Evidence:* `ts_rank(to_tsvector('english', p.name || ' ' || ...), plainto_tsquery('english', search_term))`.
+    *   *Outcome:* This allows for "Fuzzy Matching" (finding "design" even if the user types "desgn") and relevance sorting without needing heavy external services like Algolia or Elasticsearch.
+
+*   **Automated Consistency with Triggers:**
+    Database integrity is enforced via `CREATE TRIGGER update_tribe_member_count`.
+    *   *Logic:* Whenever a user joins/leaves a tribe (INSERT/DELETE on `tribe_memberships`), the parent `tribes` table's `member_count` column is automatically updated. This prevents "count drift" where the displayed number doesn't match the actual row count, a common distributed system bug.
+
 ## #cs110 - ComputationalCritique
 **Critique of the "LoCommit" Algorithm (`daily-lock.ts`):**
 *   **The Problem:** Defining a "day" for a global user base is non-trivial. A naive `Date.now()` check fails because users in varying timezones experience "midnight" differently.
