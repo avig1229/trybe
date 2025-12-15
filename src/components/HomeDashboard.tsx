@@ -50,6 +50,7 @@ export function HomeDashboard({ profile, projects, recentPosts, onSelectProject,
                                         <video
                                             src={post.mediaUrl}
                                             autoPlay
+                                            preload="auto"
                                             loop
                                             muted
                                             className="w-full h-full object-cover"
@@ -57,6 +58,7 @@ export function HomeDashboard({ profile, projects, recentPosts, onSelectProject,
                                     ) : (
                                         <>
                                             <video
+                                                preload="metadata"
                                                 src={post.mediaUrl}
                                                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                                 onMouseOver={e => e.currentTarget.play().catch(() => { })}

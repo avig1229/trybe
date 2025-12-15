@@ -200,6 +200,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                       return (
                         <div key={item.id} className="aspect-[9/16] bg-neutral-100 dark:bg-neutral-900 relative group overflow-hidden">
                           <video
+                            preload="metadata"
                             src={src}
                             className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                             muted
@@ -455,6 +456,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                               <video
                                 src={post.mediaUrl}
                                 controls
+                                preload="auto"
                                 autoPlay
                                 className="w-full h-full object-contain"
                               />
@@ -464,6 +466,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                                 className="relative w-full h-full cursor-pointer"
                               >
                                 <video
+                                  preload="metadata"
                                   src={post.mediaUrl}
                                   className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                                 />

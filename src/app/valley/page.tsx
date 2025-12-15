@@ -129,6 +129,7 @@ export default function ValleyPage() {
 
   const handleViewProject = (project: Project) => {
     setSelectedProjectId(project.id)
+    setCurrentView('valley')
   }
 
   const submitCreate = async () => {
@@ -139,7 +140,7 @@ export default function ValleyPage() {
       name: newName.trim(),
       description: newDescription || '',
       isPublic: newIsPublic,
-      status: 'planning',
+      status: 'active',
       color: 'bg-neutral-900',
     })
     setCreating(false)
@@ -321,60 +322,7 @@ export default function ValleyPage() {
               )}
             </div>
 
-            <Dialog open={showCreate} onOpenChange={setShowCreate}>
-              <DialogContent className="sm:max-w-md border-none shadow-2xl bg-background/95 backdrop-blur-xl">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold uppercase tracking-tighter">New Project</DialogTitle>
-                  <DialogDescription className="text-xs uppercase tracking-widest">Initialize a new workspace</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-8 py-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest opacity-50">Project Name</label>
-                    <Input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="UNTITLED PROJECT"
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium uppercase tracking-wide focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest opacity-50">Description</label>
-                    <Textarea
-                      value={newDescription}
-                      onChange={(e) => setNewDescription(e.target.value)}
-                      placeholder="Brief abstract..."
-                      className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 min-h-[100px] resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input
-                      id="public"
-                      type="checkbox"
-                      checked={newIsPublic}
-                      onChange={(e) => setNewIsPublic(e.target.checked)}
-                      className="w-4 h-4 rounded-none border-neutral-300 text-black focus:ring-black"
-                    />
-                    <label htmlFor="public" className="text-xs uppercase tracking-widest cursor-pointer select-none">Make Public</label>
-                  </div>
-                  <div className="flex justify-end gap-4 pt-4">
-                    <button
-                      onClick={() => setShowCreate(false)}
-                      className="text-xs uppercase tracking-widest hover:opacity-50 transition-opacity"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={submitCreate}
-                      disabled={!newName.trim() || creating}
-                      className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 text-xs uppercase tracking-widest hover:opacity-80 transition-opacity disabled:opacity-50"
-                    >
-                      {creating ? 'Creating...' : 'Create'}
-                    </button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div >
+          </div>
         )
       case 'pulse':
         return (
@@ -410,7 +358,61 @@ export default function ValleyPage() {
       <main className="w-full px-4 md:px-8 py-8">
         {renderCurrentView()}
       </main>
-      {isLocked && <DailyCheckIn onUnlock={handleUnlock} />}
+      {isLocked && <DailyCheckIn onUnlock={handleUnlock} key={user?.id} />}
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="sm:max-w-md border-none shadow-2xl bg-background/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold uppercase tracking-tighter">New Project</DialogTitle>
+            <DialogDescription className="text-xs uppercase tracking-widest">Initialize a new workspace</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-8 py-4">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest opacity-50">Project Name</label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="UNTITLED PROJECT"
+                className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium uppercase tracking-wide focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest opacity-50">Description</label>
+              <Textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Brief abstract..."
+                className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 min-h-[100px] resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-300"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                id="public"
+                type="checkbox"
+                checked={newIsPublic}
+                onChange={(e) => setNewIsPublic(e.target.checked)}
+                className="w-4 h-4 rounded-none border-neutral-300 text-black focus:ring-black"
+              />
+              <label htmlFor="public" className="text-xs uppercase tracking-widest cursor-pointer select-none">Make Public</label>
+            </div>
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-xs uppercase tracking-widest hover:opacity-50 transition-opacity"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCreate}
+                disabled={!newName.trim() || creating}
+                className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 text-xs uppercase tracking-widest hover:opacity-80 transition-opacity disabled:opacity-50"
+              >
+                {creating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

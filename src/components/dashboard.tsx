@@ -50,7 +50,7 @@ export function Dashboard({
 }: DashboardProps) {
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('week')
 
-  const activeProjects = projects.filter(p => p.status === 'active')
+  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'planning')
   // const completedProjects = projects.filter(p => p.status === 'completed')
   const myTribes = tribes.filter(t => t.isMember)
   const recentPosts = posts.slice(0, 5)

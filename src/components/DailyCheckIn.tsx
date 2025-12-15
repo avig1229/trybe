@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Project } from '@/types'
-import { getProjects, createPost } from '@/lib/supabase/queries'
+import { getProjects, getUserProjects, createPost } from '@/lib/supabase/queries'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,8 +36,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
         const loadProjects = async () => {
             if (!user) return
             try {
-                console.log('DailyCheckIn: Loading projects...')
-                const data = await getProjects(user.id)
+                console.log('DailyCheckIn: Loading projects for user', user.id)
+                // Use getUserProjects to only show projects the user OWNS
+                const data = await getUserProjects(user.id)
                 setProjects(data.filter(p => p.status === 'active' || p.status === 'planning'))
                 if (data.length > 0) {
                     setSelectedProjectId(data[0].id)
@@ -226,6 +227,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                     autoPlay
                                     muted
                                     loop
+                                    preload="metadata"
                                     playsInline
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none" />

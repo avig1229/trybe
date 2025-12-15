@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getProjects, getChannels, getBlocks } from '@/lib/supabase/queries'
+import { getProjects, getUserProjects, getChannels, getBlocks } from '@/lib/supabase/queries'
 import { Project, Channel, Block } from '@/types'
 import { ArrowLeft, Target, FileText, Video, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -32,7 +32,7 @@ export default function ProjectDetailPage() {
       setLoading(true)
       try {
         // Load all projects for sidebar
-        const projs = await getProjects(user.id)
+        const projs = await getUserProjects(user.id)
         setProjects(projs)
 
         // Find current project
