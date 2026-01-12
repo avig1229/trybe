@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { getProfile, createProfile } from '@/lib/supabase/queries'
@@ -20,7 +20,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+
+  // Use useMemo to ensure the client is stable, or just call the singleton creator once
+  const supabase = useMemo(() => createClient(), [])
 
   const loadProfile = async (userId: string) => {
     try {
@@ -28,13 +30,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!userProfile) {
         // Create profile if it doesn't exist (use snake_case column names)
+        // We need to fetch the user again to ensure we have the latest metadata if this is a new signup
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+
         await createProfile({
-          // DB column names expected by Supabase
-          // id must match auth.uid() due to RLS
           id: userId,
-          username: user?.email?.split('@')[0] || 'user',
-          full_name: (user?.user_metadata?.full_name as string | undefined) || '',
-          avatar_url: (user?.user_metadata?.avatar_url as string | undefined) || null,
+          username: currentUser?.email?.split('@')[0] || 'user',
+          full_name: (currentUser?.user_metadata?.full_name as string | undefined) || '',
+          avatar_url: (currentUser?.user_metadata?.avatar_url as string | undefined) || null,
           looking_for_collaboration: false,
         } as unknown as Profile)
 
@@ -56,37 +59,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
 
-      if (session?.user) {
-        await loadProfile(session.user.id)
+        setUser(session?.user ?? null)
+
+        if (session?.user) {
+          // Add a timeout to profile loading to prevent hanging
+          const profilePromise = loadProfile(session.user.id)
+          const timeoutPromise = new Promise(resolve => setTimeout(resolve, 5000))
+
+          await Promise.race([profilePromise, timeoutPromise])
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-
-      setLoading(false)
     }
 
     getInitialSession()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null)
+      async (_event, session) => {
+        if (!mounted) return
 
-        if (session?.user) {
-          await loadProfile(session.user.id)
-        } else {
-          setProfile(null)
+        try {
+          setUser(session?.user ?? null)
+
+          if (session?.user) {
+            // Add a timeout to profile loading to prevent hanging
+            const profilePromise = loadProfile(session.user.id)
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 5000))
+
+            await Promise.race([profilePromise, timeoutPromise])
+          } else {
+            setProfile(null)
+          }
+        } catch (error) {
+          console.error('Auth state change error:', error)
+        } finally {
+          if (mounted) {
+            setLoading(false)
+          }
         }
-
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   const signOut = async () => {
     await supabase.auth.signOut()
