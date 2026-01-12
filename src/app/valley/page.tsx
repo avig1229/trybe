@@ -9,6 +9,7 @@ import ProjectDashboard from '@/components/ProjectDashboard'
 import ProjectList from '@/components/ProjectList'
 import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
+import { Button } from '@/components/ui/button'
 import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
 // ... imports ...
@@ -25,6 +26,13 @@ import DailyCheckIn from '@/components/DailyCheckIn'
 
 export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && user && profile && !profile.onboardingCompleted) {
+      router.push('/onboarding')
+    }
+  }, [user, profile, loading, router])
   // ... existing state ...
   const [currentView, setCurrentView] = useState<View>('dashboard')
   const [globalPosts, setGlobalPosts] = useState<Post[]>([]) // For HomeDashboard
@@ -207,6 +215,15 @@ export default function ValleyPage() {
     setIsLocked(false)
   }
 
+  useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      const timer = setTimeout(() => {
+        router.push('/auth/login')
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, user, profile, router])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -222,8 +239,16 @@ export default function ValleyPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">You need to be logged in to access this page.</p>
+          <h1 className="text-2xl font-bold mb-2 text-white">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">You need to be logged in to access this page.</p>
+          <p className="text-xs opacity-50">Redirecting to login...</p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => router.push('/auth/login')}
+          >
+            Go to Login Now
+          </Button>
         </div>
       </div>
     )

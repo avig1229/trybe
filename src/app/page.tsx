@@ -6,18 +6,22 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
 
 export default function HomePage() {
-  const { user, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push('/valley')
+        if (profile && !profile.onboardingCompleted) {
+          router.push('/onboarding')
+        } else {
+          router.push('/valley')
+        }
       } else {
         router.push('/auth/login')
       }
     }
-  }, [user, loading, router])
+  }, [user, profile, loading, router])
 
   if (loading) {
     return (

@@ -20,6 +20,7 @@ export interface Profile {
   creativePhilosophy?: string
   lookingForCollaboration: boolean
   portfolioUrl?: string
+  onboardingCompleted: boolean
   createdAt: Date
   updatedAt: Date
 }

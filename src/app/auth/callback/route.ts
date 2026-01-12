@@ -32,9 +32,8 @@ export async function GET(request: NextRequest) {
               full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
             })
 
-          // New user! Redirect to their profile page
-          const username = user.user_metadata?.preferred_username || user.email?.split('@')[0]
-          return NextResponse.redirect(`${origin}/u/${username}`)
+          // New user! Redirect to onboarding
+          return NextResponse.redirect(`${origin}/onboarding`)
         }
       }
     }

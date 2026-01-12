@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Project } from '@/types'
 import { getProjects, getUserProjects, createPost } from '@/lib/supabase/queries'
 import { useAuth } from '@/contexts/AuthContext'
@@ -14,6 +14,8 @@ import { Loader2, Lock, AlertCircle, Upload, CheckCircle2 } from 'lucide-react'
 export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
     const { user } = useAuth()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const isFirstTime = searchParams.get('firstTime') === 'true'
     const [projects, setProjects] = useState<Project[]>([])
     const [selectedProjectId, setSelectedProjectId] = useState<string>('')
     const [loading, setLoading] = useState(true)
@@ -154,13 +156,37 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 <Lock className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold uppercase tracking-tighter">Daily Check-In</h1>
+                                <h1 className="text-3xl font-bold uppercase tracking-tighter">
+                                    {isFirstTime ? 'Your First Check-In' : 'Daily Check-In'}
+                                </h1>
                                 <p className="text-sm font-light text-neutral-400">
-                                    Unlock your workspace. 15-25s update.
+                                    {isFirstTime
+                                        ? 'Welcome! Upload a 15-25s video to unlock your workspace. This is your "LoCommit" – a daily ritual to stay consistent.'
+                                        : 'Unlock your workspace. 15-25s update.'}
                                 </p>
                             </div>
                         </div>
                     </div>
+
+                    {isFirstTime && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-1000">
+                            <h2 className="text-xs uppercase tracking-[0.3em] font-bold text-white/40">The Usual Flow</h2>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-2">
+                                    <h4 className="text-sm font-bold uppercase italic">1. Daily Lock</h4>
+                                    <p className="text-xs text-neutral-500">Every morning at 9 AM, your workspace locks. You must post a reel to see your project and others' updates.</p>
+                                </div>
+                                <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-2">
+                                    <h4 className="text-sm font-bold uppercase italic">2. Focus in Valley</h4>
+                                    <p className="text-xs text-neutral-500">Use Project Valley to structure your creative work into channels and blocks.</p>
+                                </div>
+                                <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-2">
+                                    <h4 className="text-sm font-bold uppercase italic">3. Sync with Pulse</h4>
+                                    <p className="text-xs text-neutral-500">Follow others, join tribes, and share your journey in the Collective Pulse.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-6 bg-neutral-900/50 p-6 rounded-2xl border border-white/10">
                         <div className="space-y-2">

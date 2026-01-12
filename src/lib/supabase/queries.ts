@@ -16,7 +16,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     return null
   }
 
-  return (data as unknown as Profile) ?? null
+  return (data ? mapProfileFromDb(data) : null)
 }
 
 export async function getProfileByUsername(username: string): Promise<Profile | null> {
@@ -31,7 +31,7 @@ export async function getProfileByUsername(username: string): Promise<Profile | 
     return null
   }
 
-  return (data as unknown as Profile) ?? null
+  return (data ? mapProfileFromDb(data) : null)
 }
 
 export async function createProfile(profile: Partial<Profile>): Promise<Profile | null> {
@@ -46,7 +46,7 @@ export async function createProfile(profile: Partial<Profile>): Promise<Profile 
     return null
   }
 
-  return data as unknown as Profile
+  return mapProfileFromDb(data)
 }
 
 export async function updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile | null> {
@@ -69,6 +69,7 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   }
   if (updates.lookingForCollaboration !== undefined) payload.looking_for_collaboration = updates.lookingForCollaboration
   if (updates.portfolioUrl !== undefined) payload.portfolio_url = updates.portfolioUrl
+  if (updates.onboardingCompleted !== undefined) payload.onboarding_completed = updates.onboardingCompleted
 
   console.log('Updating profile payload:', JSON.stringify(payload, null, 2))
 
@@ -84,7 +85,48 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
     return null
   }
 
-  return data as Profile
+  return mapProfileFromDb(data)
+}
+
+// Helpers to map between DB snake_case and app camelCase
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProfileFromDb(row: any): Profile {
+  return {
+    id: row.id,
+    username: row.username,
+    fullName: row.full_name,
+    avatarUrl: row.avatar_url,
+    bio: row.bio,
+    location: row.location,
+    website: row.website,
+    skills: row.skills,
+    creativePhilosophy: row.creative_philosophy,
+    lookingForCollaboration: row.looking_for_collaboration,
+    portfolioUrl: row.portfolio_url,
+    onboardingCompleted: row.onboarding_completed,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  }
+}
+
+export async function setOnboardingCompleted(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed: true })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('Error setting onboarding completed (Full):', JSON.stringify(error, null, 2))
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+    return false
+  }
+
+  return true
 }
 
 // Helpers to map between DB snake_case and app camelCase
