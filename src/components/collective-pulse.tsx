@@ -40,26 +40,20 @@ export function CollectivePulse({
       }
     })
 
-    return projects.map(project => {
-      // Robust spatial hash based on ID string
-      const getHash = (str: string) => {
-        let hash = 0
-        for (let i = 0; i < str.length; i++) {
-          hash = ((hash << 5) - hash) + str.charCodeAt(i)
-          hash |= 0 // Convert to 32bit integer
-        }
-        return hash
-      }
+    return projects.map((project, index) => {
+      // Fermat's Spiral Distribution
+      // Ensure trees are spread out predictably and beautifully
+      const angle = index * (Math.PI * (3 - Math.sqrt(5))) // Golden Angle
+      const radius = 400 * Math.sqrt(index) // Tighter spread, starts at center
 
-      const hash = getHash(project.id)
-      const defaultX = (hash % 7) * 450 + (hash % 3) * 100 // Large spread
-      const defaultY = ((hash >> 4) % 7) * 450 + ((hash >> 2) % 3) * 100
+      const defaultX = Math.cos(angle) * radius
+      const defaultY = Math.sin(angle) * radius
 
       return {
         project: {
           ...project,
-          forestX: project.forestX ?? defaultX,
-          forestY: project.forestY ?? defaultY
+          forestX: project.forestX || defaultX,
+          forestY: project.forestY || defaultY
         },
         posts: postMap.get(project.id) || []
       }
@@ -92,14 +86,14 @@ export function CollectivePulse({
 
       {/* Spatial Viewport */}
       <ForestViewport>
-        <div className="relative p-[2000px]"> {/* Large virtual space */}
-          {projectsWithTrees.map(({ project, posts }) => (
+        <div className="relative w-[4000px] h-[4000px]"> {/* Large virtual space */}
+          {projectsWithTrees.map(({ project, posts }, index) => (
             <div
               key={project.id}
               className="absolute transition-transform duration-500 hover:z-10"
               style={{
-                left: `calc(50% + ${project.forestX ?? 0}px)`,
-                top: `calc(50% + ${project.forestY ?? 0}px)`,
+                left: `calc(50% + ${project.forestX || 0}px)`,
+                top: `calc(50% + ${project.forestY || 0}px)`,
                 transform: 'translate(-50%, -50%)'
               }}
             >

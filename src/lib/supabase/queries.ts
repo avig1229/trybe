@@ -70,6 +70,8 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
   if (updates.lookingForCollaboration !== undefined) payload.looking_for_collaboration = updates.lookingForCollaboration
   if (updates.portfolioUrl !== undefined) payload.portfolio_url = updates.portfolioUrl
   if (updates.onboardingCompleted !== undefined) payload.onboarding_completed = updates.onboardingCompleted
+  if (updates.defaultTreeColor !== undefined) payload.default_tree_color = updates.defaultTreeColor
+  if (updates.defaultTreeConfig !== undefined) payload.default_tree_config = updates.defaultTreeConfig
 
   console.log('Updating profile payload:', JSON.stringify(payload, null, 2))
 
@@ -104,6 +106,8 @@ function mapProfileFromDb(row: any): Profile {
     lookingForCollaboration: row.looking_for_collaboration,
     portfolioUrl: row.portfolio_url,
     onboardingCompleted: row.onboarding_completed,
+    defaultTreeColor: row.default_tree_color,
+    defaultTreeConfig: row.default_tree_config,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }
@@ -145,6 +149,7 @@ type DbProject = {
   tree_config?: any | null
   created_at?: string | null
   updated_at?: string | null
+  profiles?: any
 }
 
 function mapProjectFromDb(row: DbProject): Project {
@@ -164,6 +169,7 @@ function mapProjectFromDb(row: DbProject): Project {
     treeConfig: row.tree_config as any,
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
+    user: row.profiles ? mapProfileFromDb(row.profiles) : undefined
   }
 }
 
@@ -187,8 +193,8 @@ function mapProjectToDb(p: Partial<Project>): Partial<DbProject> {
 
 // Project queries
 export async function getProjects(userId?: string): Promise<Project[]> {
-  // Keep selection simple to avoid RLS issues on joined tables
-  const base = supabase.from('projects').select('*').order('created_at', { ascending: false })
+  // Fetch projects with their owner profiles to allow for tree customization
+  const base = supabase.from('projects').select('*, profiles(*)').order('created_at', { ascending: false })
 
   const { data, error } = userId
     ? await base.or(`user_id.eq.${userId},is_public.eq.true`)
@@ -205,7 +211,7 @@ export async function getProjects(userId?: string): Promise<Project[]> {
 export async function getUserProjects(userId: string): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects')
-    .select('*')
+    .select('*, profiles(*)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 

@@ -21,6 +21,8 @@ export interface Profile {
   lookingForCollaboration: boolean
   portfolioUrl?: string
   onboardingCompleted: boolean
+  defaultTreeColor?: string
+  defaultTreeConfig?: TreeConfig
   createdAt: Date
   updatedAt: Date
 }

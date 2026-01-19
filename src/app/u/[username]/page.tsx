@@ -64,6 +64,14 @@ export default function UserProfilePage() {
       skills: profile.skills || [],
       lookingForCollaboration: profile.lookingForCollaboration,
       creativePhilosophy: profile.creativePhilosophy,
+      defaultTreeColor: profile.defaultTreeColor,
+      defaultTreeConfig: profile.defaultTreeConfig || {
+        palette: 'green-phosphor',
+        trunkStyle: 'solid',
+        branchAngle: 0,
+        foliage: 'orb',
+        growthDirection: 'up'
+      },
     })
   }, [profile?.id])
 
@@ -99,6 +107,8 @@ export default function UserProfilePage() {
       lookingForCollaboration: !!form.lookingForCollaboration,
       username: form.username,
       creativePhilosophy: form.creativePhilosophy,
+      defaultTreeColor: form.defaultTreeColor,
+      defaultTreeConfig: form.defaultTreeConfig,
     } as Profile)
     if (updated) {
       setProfile(updated)
@@ -417,11 +427,53 @@ export default function UserProfilePage() {
                     className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-2xl font-light min-h-[150px] bg-transparent resize-none focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white placeholder:text-neutral-200 dark:placeholder:text-neutral-700 text-black dark:text-white"
                   />
                 </div>
+
+                <div className="md:col-span-2 space-y-8 pt-8 border-t border-neutral-100 dark:border-neutral-800">
+                  <h3 className="text-xl font-bold uppercase tracking-tighter">Forest Identity</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Tree Color (Hex)</label>
+                      <div className="flex gap-4">
+                        <Input
+                          type="color"
+                          value={form.defaultTreeColor || '#33ff33'}
+                          onChange={e => setForm({ ...form, defaultTreeColor: e.target.value })}
+                          className="w-12 h-12 p-1 bg-transparent border-neutral-200 dark:border-neutral-800 cursor-pointer"
+                        />
+                        <Input
+                          value={form.defaultTreeColor || '#33ff33'}
+                          onChange={e => setForm({ ...form, defaultTreeColor: e.target.value })}
+                          className="border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none px-0 text-xl font-medium bg-transparent focus-visible:ring-0 focus-visible:border-black dark:focus-visible:border-white text-black dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Trunk Style</label>
+                      <select
+                        value={form.defaultTreeConfig?.trunkStyle || 'solid'}
+                        onChange={e => setForm({
+                          ...form,
+                          defaultTreeConfig: {
+                            ...(form.defaultTreeConfig || { palette: 'green-phosphor', branchAngle: 0, foliage: 'orb', growthDirection: 'up' }),
+                            trunkStyle: e.target.value as any
+                          }
+                        })}
+                        className="w-full bg-transparent border-0 border-b border-neutral-200 dark:border-neutral-800 rounded-none py-2 text-xl font-medium focus:ring-0 focus:border-black dark:focus:border-white text-black dark:text-white appearance-none"
+                      >
+                        <option value="solid">SOLID</option>
+                        <option value="dotted">DOTTED</option>
+                        <option value="circuit">CIRCUIT</option>
+                        <option value="fluid">FLUID</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
