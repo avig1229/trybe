@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // @ts-ignore - experimental property from Next.js 15+ warning
+    allowedDevOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  },
 };
 
 export default nextConfig;

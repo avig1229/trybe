@@ -28,23 +28,27 @@ export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && user && profile && !profile.onboardingCompleted) {
-      router.push('/onboarding')
-    }
-  }, [user, profile, loading, router])
-  // ... existing state ...
-  const [currentView, setCurrentView] = useState<View>('dashboard')
-  const [globalPosts, setGlobalPosts] = useState<Post[]>([]) // For HomeDashboard
+  const [currentView, setCurrentView] = useState<View>('pulse')
+  const [globalPosts, setGlobalPosts] = useState<Post[]>([])
 
   // State for data
-  const [projects, setProjects] = useState<Project[]>([])
+  const [ecosystemProjects, setEcosystemProjects] = useState<Project[]>([])
+  const [userProjects, setUserProjects] = useState<Project[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [tribes, setTribes] = useState<Tribe[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState<number>(320)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
   const [isLocked, setIsLocked] = useState<boolean | null>(null) // null = loading
+
+  useEffect(() => {
+    if (!loading && user && profile) {
+      // If user has projects but hasn't "completed" onboarding, let them skip the guide
+      if (!profile.onboardingCompleted && userProjects.length === 0) {
+        router.push('/onboarding')
+      }
+    }
+  }, [user, profile, loading, router, userProjects.length])
 
   // Create project dialog state
   const [showCreate, setShowCreate] = useState(false)
@@ -70,14 +74,18 @@ export default function ValleyPage() {
     const loadProjectsAndPosts = async () => {
       if (!user) return
       try {
-        // Fetch projects
-        const data = await getUserProjects(user.id)
-        setProjects(data)
-        // No auto-select first project anymore
+        // Fetch projects for the Forest/Ecosystem (Public + User's)
+        const allProjs = await getProjects(user.id)
+        setEcosystemProjects(allProjs)
 
-        // Fetch recent posts for Global Reel (active ecosystem)
-        const recent = await getPosts(20, 0, undefined, user.id)
+        // Fetch user projects for the Valley sidebar
+        const personal = await getUserProjects(user.id)
+        setUserProjects(personal)
+
+        // Fetch recent posts for the Pulse/Forest
+        const recent = await getPosts(200)
         setGlobalPosts(recent)
+        setPosts(recent)
       } catch (e) {
         console.error(e)
       }
@@ -86,9 +94,7 @@ export default function ValleyPage() {
     if (user && profile) {
       loadProjectsAndPosts()
 
-      setPosts([
-        // ... keeping mock posts for 'pulse' view locally if needed, 
-      ])
+      setPosts(globalPosts)
       // ... tribes mock data ...
       setTribes([
         {
@@ -116,15 +122,15 @@ export default function ValleyPage() {
 
   const handleDeleteProject = (projectId: string) => {
     // Optimistic UI delete
-    const next = projects.filter(p => p.id !== projectId)
-    setProjects(next)
+    const next = userProjects.filter(p => p.id !== projectId)
+    setUserProjects(next)
     // If deleting the selected project, select the first remaining (if any)
     if (selectedProjectId === projectId) {
       setSelectedProjectId(next.length ? next[0].id : null)
     }
     deleteProject(projectId).catch(() => {
       // rollback
-      setProjects(projects)
+      setUserProjects(userProjects)
       if (selectedProjectId === projectId) {
         setSelectedProjectId(projectId)
       }
@@ -153,7 +159,8 @@ export default function ValleyPage() {
     })
     setCreating(false)
     if (created) {
-      setProjects(prev => [created, ...prev])
+      setUserProjects(prev => [created, ...prev])
+      setEcosystemProjects(prev => [created, ...prev])
       setShowCreate(false)
       setNewName('')
       setNewDescription('')
@@ -258,22 +265,19 @@ export default function ValleyPage() {
     switch (currentView) {
       case 'dashboard':
         return (
-          <Dashboard
-            profile={profile}
-            projects={projects}
-            posts={globalPosts}
-            tribes={tribes}
-            onCreateProject={handleCreateProject}
+          <CollectivePulse
+            posts={posts}
+            projects={ecosystemProjects}
             onCreatePost={handleCreatePost}
-            onCreateTribe={handleCreateTribe}
-            onViewProject={handleViewProject}
+            onLikePost={handleLikePost}
+            onCommentPost={handleCommentPost}
+            onSavePost={handleSavePost}
             onViewPost={handleViewPost}
-            onViewTribe={handleViewTribe}
           />
         )
       case 'valley':
         return (
-          <div className="min-h-[calc(100vh-6rem)] grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8">
+          <div className="min-h-[calc(100vh-6rem)] grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] gap-8">
             <div
               className={cn(
                 "transition-all duration-500 overflow-hidden relative hidden lg:block",
@@ -293,14 +297,22 @@ export default function ValleyPage() {
 
                 {!sidebarCollapsed && (
                   <div className="space-y-12 animate-in fade-in slide-in-from-left-4 duration-500">
-                    {/* Daily Check-in Board */}
-                    <div className="space-y-4">
-                      <h3 className="text-xs uppercase tracking-[0.2em] opacity-50">Daily Check-ins</h3>
-                      {user && <ContributionGraph userId={user.id} />}
+                    {/* Quick Summary Section */}
+                    <div className="space-y-6 pb-6 border-b border-white/5">
+                      <div className="space-y-1">
+                        <h3 className="text-xs uppercase tracking-[0.2em] opacity-40 italic">Creator Stats</h3>
+                        <p className="text-2xl font-bold tracking-tighter">
+                          {userProjects.length} <span className="text-[10px] uppercase tracking-widest opacity-40 font-normal">Active Projects</span>
+                        </p>
+                      </div>
+                      <div className="space-y-4">
+                        <h3 className="text-xs uppercase tracking-[0.2em] opacity-40 italic">Activity Tracker</h3>
+                        {user && <ContributionGraph userId={user.id} />}
+                      </div>
                     </div>
 
                     <ProjectList
-                      projects={projects}
+                      projects={userProjects}
                       selectedProjectId={selectedProjectId}
                       onSelect={handleViewProject}
                       onCreate={handleCreateProject}
@@ -317,29 +329,30 @@ export default function ValleyPage() {
                 className="w-full bg-transparent border-b border-white py-2 text-lg uppercase tracking-widest font-bold outline-none rounded-none"
                 value={selectedProjectId || ''}
                 onChange={(e) => {
-                  const p = projects.find(proj => proj.id === e.target.value)
+                  const p = userProjects.find(proj => proj.id === e.target.value)
                   if (p) handleViewProject(p)
                 }}
               >
                 <option value="" disabled>SELECT PROJECT</option>
-                {projects.map(p => (
+                {userProjects.map(p => (
                   <option key={p.id} value={p.id} className="bg-black text-white">{p.name}</option>
                 ))}
               </select>
             </div>
 
             <div className="min-h-[50vh]">
-              {selectedProjectId && projects.find(p => p.id === selectedProjectId) ? (
+              {selectedProjectId && userProjects.find(p => p.id === selectedProjectId) ? (
                 <ProjectDashboard
-                  project={projects.find(p => p.id === selectedProjectId)}
+                  project={userProjects.find(p => p.id === selectedProjectId)}
                   onProjectUpdated={(p) => {
-                    setProjects(prev => prev.map(x => x.id === p.id ? p : x))
+                    setUserProjects(prev => prev.map(x => x.id === p.id ? p : x))
+                    setEcosystemProjects(prev => prev.map(x => x.id === p.id ? p : x))
                   }}
                 />
               ) : (
                 <HomeDashboard
                   profile={profile}
-                  projects={projects}
+                  projects={userProjects}
                   recentPosts={globalPosts}
                   onSelectProject={handleSelectProject}
                   onCreateProject={handleCreateProject}
@@ -353,7 +366,7 @@ export default function ValleyPage() {
         return (
           <CollectivePulse
             posts={posts}
-            projects={projects}
+            projects={ecosystemProjects}
             onCreatePost={handleCreatePost}
             onLikePost={handleLikePost}
             onCommentPost={handleCommentPost}

@@ -1,25 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Post, Project } from '@/types'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-// import { Input } from '@/components/ui/input'
-import {
-  Heart,
-  MessageSquare,
-  Bookmark,
-  Share2,
-  MoreHorizontal,
-  Send,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Smile
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ForestViewport } from './pulse/ForestViewport'
+import { ProjectTree } from './pulse/ProjectTree'
+import { Plus, Maximize2, Layers } from 'lucide-react'
 
 interface CollectivePulseProps {
   posts: Post[]
@@ -31,180 +17,137 @@ interface CollectivePulseProps {
   onViewPost: (post: Post) => void
 }
 
+type Theme = 'amber' | 'green' | 'cga' | 'gameboy'
+
 export function CollectivePulse({
   posts,
-  // projects,
+  projects,
   onCreatePost,
-  onLikePost,
-  onCommentPost,
-  onSavePost,
+  // onLikePost,
+  // onCommentPost,
+  // onSavePost,
   onViewPost
 }: CollectivePulseProps) {
-  const [newPostContent, setNewPostContent] = useState('')
+  const [theme, setTheme] = useState<Theme>('amber')
 
-  const getPostTypeIcon = (type: Post['type']) => {
-    switch (type) {
-      case 'progress': return '🚀'
-      case 'question': return '❓'
-      case 'showcase': return '✨'
-      case 'collaboration_request': return '🤝'
-      default: return '📝'
-    }
-  }
+  // Group posts by project for tree rendering
+  const projectsWithTrees = useMemo(() => {
+    const postMap = new Map<string, Post[]>()
+    posts.forEach(post => {
+      if (post.projectId) {
+        const existing = postMap.get(post.projectId) || []
+        postMap.set(post.projectId, [...existing, post])
+      }
+    })
 
-  const getPostTypeLabel = (type: Post['type']) => {
-    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-  }
+    return projects.map(project => {
+      // Robust spatial hash based on ID string
+      const getHash = (str: string) => {
+        let hash = 0
+        for (let i = 0; i < str.length; i++) {
+          hash = ((hash << 5) - hash) + str.charCodeAt(i)
+          hash |= 0 // Convert to 32bit integer
+        }
+        return hash
+      }
+
+      const hash = getHash(project.id)
+      const defaultX = (hash % 7) * 450 + (hash % 3) * 100 // Large spread
+      const defaultY = ((hash >> 4) % 7) * 450 + ((hash >> 2) % 3) * 100
+
+      return {
+        project: {
+          ...project,
+          forestX: project.forestX ?? defaultX,
+          forestY: project.forestY ?? defaultY
+        },
+        posts: postMap.get(project.id) || []
+      }
+    })
+  }, [posts, projects])
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Collective Pulse</h1>
-          <p className="text-muted-foreground">See what the community is building</p>
+    <div className="relative w-full h-[calc(100vh-100px)] bg-black overflow-hidden font-mono">
+      {/* Header / Controls Overlay */}
+      <header className="absolute top-6 left-6 right-6 z-20 flex justify-between items-start pointer-events-none">
+        <div className="pointer-events-auto">
+          <h1 className="text-2xl font-bold tracking-tighter text-white">THE FOREST</h1>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-[0.3em] mt-1">Spatial Collective Pulse</p>
         </div>
-      </div>
 
-      {/* Create Post */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <Avatar>
-              <AvatarFallback>ME</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-4">
-              <Textarea
-                placeholder="Share your progress, ask a question, or showcase your work..."
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                className="min-h-[100px] resize-none"
+        <div className="flex gap-2 pointer-events-auto">
+          {(['amber', 'green', 'cga', 'gameboy'] as Theme[]).map(t => (
+            <Button
+              key={t}
+              variant={theme === t ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTheme(t)}
+              className="uppercase text-[9px] h-7 rounded-none border-white/10 transition-all font-mono"
+            >
+              {t}
+            </Button>
+          ))}
+        </div>
+      </header>
+
+      {/* Spatial Viewport */}
+      <ForestViewport>
+        <div className="relative p-[2000px]"> {/* Large virtual space */}
+          {projectsWithTrees.map(({ project, posts }) => (
+            <div
+              key={project.id}
+              className="absolute transition-transform duration-500 hover:z-10"
+              style={{
+                left: `calc(50% + ${project.forestX ?? 0}px)`,
+                top: `calc(50% + ${project.forestY ?? 0}px)`,
+                transform: 'translate(-50%, -50%)'
+              }}
+            >
+              <ProjectTree
+                project={project}
+                posts={posts}
+                theme={theme}
+                onNodeClick={onViewPost}
               />
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <ImageIcon className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <LinkIcon className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <Smile className="h-5 w-5" />
-                  </Button>
-                </div>
-                <Button onClick={onCreatePost} disabled={!newPostContent.trim()}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Post
-                </Button>
-              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      </ForestViewport>
 
-      {/* Posts Feed */}
-      <div className="space-y-6">
-        {posts.map((post) => (
-          <Card key={post.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewPost(post)}>
-            <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-              <Avatar>
-                <AvatarImage src={post.user?.avatarUrl} />
-                <AvatarFallback>{post.user?.fullName?.[0] || 'U'}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">{post.user?.fullName || 'Unknown User'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(post.createdAt).toLocaleDateString()} • {getPostTypeIcon(post.type)} {getPostTypeLabel(post.type)}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {post.title && (
-                <h3 className="text-xl font-semibold">{post.title}</h3>
-              )}
-              <p className="whitespace-pre-wrap">{post.content}</p>
+      {/* CRT Overlay Effect */}
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] z-10 bg-[length:100%_2px,3px_100%] opacity-20" />
 
-              {post.mediaUrl && (
-                <div className="rounded-md overflow-hidden bg-muted aspect-video flex items-center justify-center">
-                  {/* Placeholder for media */}
-                  <span className="text-muted-foreground">Media Content</span>
-                </div>
-              )}
-
-              {/* Tags/Context */}
-              <div className="flex flex-wrap gap-2">
-                {post.project && (
-                  <Badge variant="outline" className="bg-primary/5">
-                    Project: {post.project.name}
-                  </Badge>
-                )}
-                {post.tribe && (
-                  <Badge variant="outline" className="bg-secondary/50">
-                    Tribe: {post.tribe.name}
-                  </Badge>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn("gap-2", post.isLiked && "text-red-500")}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onLikePost(post.id)
-                  }}
-                >
-                  <Heart className={cn("h-4 w-4", post.isLiked && "fill-current")} />
-                  {post.likeCount || 0}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCommentPost(post.id)
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {post.commentCount || 0}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSavePost(post.id)
-                  }}
-                >
-                  <Bookmark className={cn("h-4 w-4", post.isSaved && "fill-current")} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    // Share logic
-                  }}
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Floating Action Bar */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-black/80 backdrop-blur-xl p-1 border border-white/10 rounded-full shadow-2xl">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full w-12 h-12 hover:bg-white/10 text-white"
+          onClick={onCreatePost}
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
+        <div className="w-px h-6 bg-white/10 my-auto mx-2" />
+        <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 hover:bg-white/10 text-neutral-400">
+          <Maximize2 className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 hover:bg-white/10 text-neutral-400">
+          <Layers className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* UI Accents */}
+      <div className="absolute top-1/2 left-6 -translate-y-1/2 space-y-4 opacity-20 pointer-events-none hidden md:block">
+        <div className="w-px h-20 bg-gradient-to-b from-transparent via-white to-transparent" />
+        <span className="text-[8px] rotate-180 [writing-mode:vertical-lr] uppercase tracking-[0.5em]">Nav_Map_V.01</span>
+      </div>
+
+      <style jsx global>{`
+        .image-render-pixelated {
+          image-rendering: pixelated;
+          image-rendering: crisp-edges;
+        }
+      `}</style>
     </div>
   )
 }

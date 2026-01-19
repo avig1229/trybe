@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 // import { Badge } from '@/components/ui/badge'
 import {
-  LayoutDashboard,
+  Activity,
   Mountain,
   Sun,
   Moon,
@@ -29,7 +29,7 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const navigationItems = [
-    { id: 'dashboard' as View, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'pulse' as View, label: 'Forest', icon: Activity },
     { id: 'valley' as View, label: 'Valley', icon: Mountain },
   ]
 
@@ -82,7 +82,10 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
                       isActive ? "bg-black text-white dark:bg-white dark:text-black" : "opacity-50 hover:opacity-100"
                     )}
                   >
-                    {item.label}
+                    <div className="flex items-center gap-2">
+                      <item.icon className="h-3 w-3" />
+                      {item.label}
+                    </div>
                   </button>
                 )
               })}

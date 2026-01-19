@@ -76,6 +76,17 @@ export interface Project {
   channelCount?: number
   blockCount?: number
   postCount?: number
+  forestX?: number
+  forestY?: number
+  treeConfig?: TreeConfig
+}
+
+export interface TreeConfig {
+  palette: string
+  trunkStyle: 'solid' | 'dotted' | 'circuit' | 'fluid'
+  branchAngle: number
+  foliage: 'orb' | 'cursor' | 'sprite'
+  growthDirection: 'up' | 'down'
 }
 
 // Channel (for organizing blocks within projects)
@@ -130,6 +141,7 @@ export interface Post {
   commentCount?: number
   isLiked?: boolean
   isSaved?: boolean
+  parentPostId?: string
 }
 
 // Like

@@ -129,7 +129,6 @@ export async function setOnboardingCompleted(userId: string): Promise<boolean> {
   return true
 }
 
-// Helpers to map between DB snake_case and app camelCase
 type DbProject = {
   id: string
   user_id: string
@@ -141,6 +140,9 @@ type DbProject = {
   tags?: string[] | null
   cover_image_url?: string | null
   tribe_id?: string | null
+  garden_x?: number | null
+  garden_y?: number | null
+  tree_config?: any | null
   created_at?: string | null
   updated_at?: string | null
 }
@@ -157,6 +159,9 @@ function mapProjectFromDb(row: DbProject): Project {
     tags: row.tags ?? [],
     coverImageUrl: row.cover_image_url ?? undefined,
     tribeId: row.tribe_id ?? undefined,
+    forestX: row.garden_x ?? undefined,
+    forestY: row.garden_y ?? undefined,
+    treeConfig: row.tree_config as any,
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.updated_at ? new Date(row.updated_at) : new Date(),
   }
@@ -174,6 +179,9 @@ function mapProjectToDb(p: Partial<Project>): Partial<DbProject> {
     ...(p.tags !== undefined ? { tags: p.tags } : {}),
     ...(p.coverImageUrl !== undefined ? { cover_image_url: p.coverImageUrl } : {}),
     ...(p.tribeId !== undefined ? { tribe_id: p.tribeId } : {}),
+    ...(p.forestX !== undefined ? { garden_x: p.forestX } : {}),
+    ...(p.forestY !== undefined ? { garden_y: p.forestY } : {}),
+    ...(p.treeConfig !== undefined ? { tree_config: p.treeConfig } : {}),
   }
 }
 
@@ -428,6 +436,7 @@ type DbPost = {
   thumbnail_url?: string | null
   is_featured: boolean
   view_count: number
+  parent_post_id?: string | null
   created_at: string
   updated_at: string
   user?: Profile
@@ -459,17 +468,20 @@ function mapPostFromDb(row: DbPost): Post {
     commentCount: 0, // Will be populated separately
     isLiked: false,
     isSaved: false,
+    parentPostId: row.parent_post_id || undefined,
   }
 }
 
-export async function getPosts(limit = 20, offset = 0, projectId?: string, userId?: string): Promise<Post[]> {
+export async function getPosts(limit = 50, offset = 0, projectId?: string, userId?: string): Promise<Post[]> {
   let query = supabase
     .from('posts')
     .select(`
       *,
       user:profiles(*),
       project:projects(*),
-      tribe:tribes(*)
+      tribe:tribes(*),
+      likes:likes(count),
+      comments:comments(count)
     `)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -489,24 +501,11 @@ export async function getPosts(limit = 20, offset = 0, projectId?: string, userI
     return []
   }
 
-  // Get like and comment counts for each post
-  const postsWithCounts = await Promise.all(
-    (data || []).map(async (row) => {
-      const post = mapPostFromDb(row as DbPost)
-      const [likeCount, commentCount] = await Promise.all([
-        getPostLikeCount(post.id),
-        getPostCommentCount(post.id)
-      ])
-
-      return {
-        ...post,
-        likeCount,
-        commentCount,
-      }
-    })
-  )
-
-  return postsWithCounts
+  return (data || []).map((row: any) => ({
+    ...mapPostFromDb(row as DbPost),
+    likeCount: row.likes?.[0]?.count || 0,
+    commentCount: row.comments?.[0]?.count || 0,
+  }))
 }
 
 export async function createPost(post: Partial<Post>): Promise<Post | null> {
@@ -520,6 +519,7 @@ export async function createPost(post: Partial<Post>): Promise<Post | null> {
   if (post.mediaType) { dbPost.media_type = post.mediaType; delete dbPost.mediaType }
   if (post.thumbnailUrl) { dbPost.thumbnail_url = post.thumbnailUrl; delete dbPost.thumbnailUrl }
   if (post.isFeatured !== undefined) { dbPost.is_featured = post.isFeatured; delete dbPost.isFeatured }
+  if (post.parentPostId) { dbPost.parent_post_id = post.parentPostId; delete dbPost.parentPostId }
 
   // Remove view-only fields
   delete dbPost.user
@@ -560,6 +560,7 @@ export async function updatePost(postId: string, updates: Partial<Post>): Promis
   if (updates.mediaType) { dbPost.media_type = updates.mediaType; delete dbPost.mediaType }
   if (updates.thumbnailUrl) { dbPost.thumbnail_url = updates.thumbnailUrl; delete dbPost.thumbnailUrl }
   if (updates.isFeatured !== undefined) { dbPost.is_featured = updates.isFeatured; delete dbPost.isFeatured }
+  if (updates.parentPostId) { dbPost.parent_post_id = updates.parentPostId; delete dbPost.parentPostId }
 
   // Remove view-only fields
   delete dbPost.id
