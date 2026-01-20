@@ -24,7 +24,7 @@ export const FILE_TYPES = {
   video: {
     extensions: ['.mp4', '.webm', '.mov', '.avi'],
     mimeTypes: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
-    maxSize: 100 * 1024 * 1024, // 100MB
+    maxSize: 50 * 1024 * 1024, // 50MB (Aligned with Supabase defaults)
     maxDuration: 30, // 30 seconds
   },
   document: {

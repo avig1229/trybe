@@ -96,7 +96,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
             setVideoFile(file)
             setVideoPreview(url)
 
-            if (video.duration < 15) {
+            if (file.size > 50 * 1024 * 1024) {
+                setError('Video is too large. Maximum 50MB.')
+            } else if (video.duration < 15) {
                 setError('Video is too short. Minimum 15 seconds.')
             } else if (video.duration > 25) {
                 setError('Video is too long. Maximum 25 seconds.')
@@ -337,9 +339,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                     }
 
                                     await handleUploadComplete(result)
-                                } catch (e) {
-                                    console.error(e)
-                                    setError('Upload failed.')
+                                } catch (e: any) {
+                                    console.error('CheckIn Error:', e)
+                                    setError(e.message || 'Upload failed.')
                                     setUploading(false)
                                 }
                             }}

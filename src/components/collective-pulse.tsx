@@ -10,6 +10,7 @@ import { Plus, Maximize2, Layers } from 'lucide-react'
 interface CollectivePulseProps {
   posts: Post[]
   projects: Project[]
+  currentUserId?: string
   onCreatePost: () => void
   onLikePost: (postId: string) => void
   onCommentPost: (postId: string) => void
@@ -22,6 +23,7 @@ type Theme = 'amber' | 'green' | 'cga' | 'gameboy'
 export function CollectivePulse({
   posts,
   projects,
+  currentUserId,
   onCreatePost,
   // onLikePost,
   // onCommentPost,
@@ -29,8 +31,9 @@ export function CollectivePulse({
   onViewPost
 }: CollectivePulseProps) {
   const [theme, setTheme] = useState<Theme>('amber')
+  const [zoom, setZoom] = useState(1.0)
 
-  // Group posts by project for tree rendering
+  // Group posts by project and distribute trees spatially
   const projectsWithTrees = useMemo(() => {
     const postMap = new Map<string, Post[]>()
     posts.forEach(post => {
@@ -40,7 +43,16 @@ export function CollectivePulse({
       }
     })
 
-    return projects.map((project, index) => {
+    // Sort such that user's projects are at the center (start of array for Fermat's Spiral)
+    // and randomizing the order of the rest.
+    const userProjs = projects.filter(p => p.userId === currentUserId)
+    const otherProjs = projects
+      .filter(p => p.userId !== currentUserId)
+      .sort(() => Math.random() - 0.5) // Randomize others
+
+    const sortedProjects = [...userProjs, ...otherProjs]
+
+    return sortedProjects.map((project, index) => {
       // Fermat's Spiral Distribution
       // Ensure trees are spread out predictably and beautifully
       const angle = index * (Math.PI * (3 - Math.sqrt(5))) // Golden Angle
@@ -58,10 +70,10 @@ export function CollectivePulse({
         posts: postMap.get(project.id) || []
       }
     })
-  }, [posts, projects])
+  }, [posts, projects, currentUserId])
 
   return (
-    <div className="relative w-full h-[calc(100vh-100px)] bg-black overflow-hidden font-mono">
+    <div className="relative w-full h-full bg-transparent overflow-hidden font-mono transition-colors duration-700">
       {/* Header / Controls Overlay */}
       <header className="absolute top-6 left-6 right-6 z-20 flex justify-between items-start pointer-events-none">
         <div className="pointer-events-auto">
@@ -76,7 +88,7 @@ export function CollectivePulse({
               variant={theme === t ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTheme(t)}
-              className="uppercase text-[9px] h-7 rounded-none border-white/10 transition-all font-mono"
+              className="uppercase text-[9px] h-7 rounded-none border-black/10 dark:border-white/10 transition-all font-mono"
             >
               {t}
             </Button>
@@ -85,7 +97,7 @@ export function CollectivePulse({
       </header>
 
       {/* Spatial Viewport */}
-      <ForestViewport>
+      <ForestViewport zoom={zoom}>
         <div className="relative w-[4000px] h-[4000px]"> {/* Large virtual space */}
           {projectsWithTrees.map(({ project, posts }, index) => (
             <div
@@ -112,7 +124,7 @@ export function CollectivePulse({
       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] z-10 bg-[length:100%_2px,3px_100%] opacity-20" />
 
       {/* Floating Action Bar */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-black/80 backdrop-blur-xl p-1 border border-white/10 rounded-full shadow-2xl">
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex gap-1 bg-black/80 backdrop-blur-xl p-1 border border-white/10 rounded-full shadow-2xl">
         <Button
           variant="ghost"
           size="icon"
@@ -122,7 +134,36 @@ export function CollectivePulse({
           <Plus className="h-5 w-5" />
         </Button>
         <div className="w-px h-6 bg-white/10 my-auto mx-2" />
-        <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 hover:bg-white/10 text-neutral-400">
+
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-1 px-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-8 h-8 hover:bg-white/10 text-white font-bold"
+            onClick={() => setZoom(prev => Math.max(0.2, prev - 0.1))}
+          >
+            -
+          </Button>
+          <span className="text-[9px] text-white/50 w-8 text-center">{Math.round(zoom * 100)}%</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-8 h-8 hover:bg-white/10 text-white font-bold"
+            onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
+          >
+            +
+          </Button>
+        </div>
+
+        <div className="w-px h-6 bg-white/10 my-auto mx-2" />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full w-12 h-12 hover:bg-white/10 text-neutral-400"
+          onClick={() => setZoom(1.0)}
+        >
           <Maximize2 className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 hover:bg-white/10 text-neutral-400">

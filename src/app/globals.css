@@ -6,6 +6,8 @@
   --surface: #ffffff;
   --muted: #f5f5f5;
   --border: #e5e5e5;
+  --forest-bg: #4a5d4a;
+  --forest-tile: #6d4c41;
 }
 
 @theme inline {
@@ -22,6 +24,8 @@
     --surface: #000000;
     --muted: #111111;
     --border: #222222;
+    --forest-bg: #131a13;
+    --forest-tile: #1a0f08;
   }
 }
 
@@ -32,6 +36,8 @@
   --surface: #000000;
   --muted: #111111;
   --border: #222222;
+  --forest-bg: #131a13;
+  --forest-tile: #1a0f08;
 }
 
 body {

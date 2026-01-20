@@ -9,9 +9,10 @@ interface HomeDashboardProps {
     recentPosts: Post[]
     onSelectProject: (project: Project) => void
     onCreateProject?: () => void
+    onExploreForest?: () => void
 }
 
-export function HomeDashboard({ profile, projects, recentPosts, onSelectProject, onCreateProject }: HomeDashboardProps) {
+export function HomeDashboard({ profile, projects, recentPosts, onSelectProject, onCreateProject, onExploreForest }: HomeDashboardProps) {
     const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
     const [playingVideo, setPlayingVideo] = useState<string | null>(null)
 
@@ -29,23 +30,26 @@ export function HomeDashboard({ profile, projects, recentPosts, onSelectProject,
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button
                         onClick={onCreateProject}
-                        className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-neutral-50 dark:bg-neutral-900/50 group text-left"
+                        className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-white group text-left shadow-sm overflow-hidden relative"
                     >
-                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold">Workspace</p>
-                        <p className="text-sm font-bold uppercase tracking-tight group-hover:translate-x-1 transition-transform">+ Initialize Project</p>
+                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold text-neutral-900">Workspace</p>
+                        <p className="text-sm font-bold uppercase tracking-tight group-hover:translate-x-1 transition-transform text-neutral-900">+ Initialize Project</p>
                     </button>
-                    <button className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-neutral-50 dark:bg-neutral-900/50 group text-left opacity-70">
-                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold">Collaboration</p>
-                        <p className="text-sm font-bold uppercase tracking-tight">Broadcast Update</p>
+                    <button className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-neutral-200 dark:bg-neutral-300 group text-left opacity-70">
+                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold text-neutral-900">Collaboration</p>
+                        <p className="text-sm font-bold uppercase tracking-tight text-neutral-900">Broadcast Update</p>
                     </button>
-                    <button className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-neutral-50 dark:bg-neutral-900/50 group text-left opacity-70">
-                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold">Discovery</p>
-                        <p className="text-sm font-bold uppercase tracking-tight">Explore Forest</p>
+                    <button
+                        onClick={onExploreForest}
+                        className="p-6 border border-neutral-200 dark:border-neutral-800 hover:border-black dark:hover:border-white transition-all bg-neutral-200 dark:bg-neutral-300 group text-left opacity-70"
+                    >
+                        <p className="text-[10px] uppercase tracking-widest opacity-70 mb-2 font-bold text-neutral-900">Discovery</p>
+                        <p className="text-sm font-bold uppercase tracking-tight text-neutral-900">Explore Forest</p>
                     </button>
-                    <div className="p-6 border border-neutral-200 dark:border-neutral-800 bg-neutral-100/50 dark:bg-neutral-900/20 flex items-center justify-between">
+                    <div className="p-6 border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-200 flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] uppercase tracking-widest opacity-70 font-bold">Profile Strength</p>
-                            <p className="text-sm font-bold tracking-tight">85% COMPLETE</p>
+                            <p className="text-[10px] uppercase tracking-widest opacity-70 font-bold text-neutral-900">Profile Strength</p>
+                            <p className="text-sm font-bold tracking-tight text-neutral-900">85% COMPLETE</p>
                         </div>
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
                     </div>
@@ -140,7 +144,7 @@ export function HomeDashboard({ profile, projects, recentPosts, onSelectProject,
                                 onClick={() => onSelectProject(project)}
                                 onMouseEnter={() => setHoveredProjectId(project.id)}
                                 onMouseLeave={() => setHoveredProjectId(null)}
-                                className="group relative aspect-video bg-neutral-100 dark:bg-neutral-900/40 border-r border-b border-neutral-200 dark:border-neutral-800 hover:z-10 transition-all duration-300 cursor-pointer overflow-hidden"
+                                className="group relative aspect-video bg-white dark:bg-neutral-900 border-r border-b border-neutral-200 dark:border-neutral-800 hover:z-10 transition-all duration-300 cursor-pointer overflow-hidden"
                             >
                                 {/* Minimal Status Dot */}
                                 <div className={cn(
@@ -150,8 +154,8 @@ export function HomeDashboard({ profile, projects, recentPosts, onSelectProject,
 
                                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
                                     <div>
-                                        <h4 className="text-2xl font-bold uppercase tracking-tighter group-hover:translate-x-2 transition-transform duration-300">{project.name}</h4>
-                                        <p className="mt-2 text-[10px] uppercase tracking-widest opacity-50 line-clamp-2 group-hover:translate-x-2 transition-transform duration-300 delay-75">{project.description}</p>
+                                        <h4 className="text-2xl font-bold uppercase tracking-tighter group-hover:translate-x-2 transition-transform duration-300 text-neutral-900 dark:text-neutral-50">{project.name}</h4>
+                                        <p className="mt-2 text-[10px] uppercase tracking-widest opacity-60 line-clamp-2 group-hover:translate-x-2 transition-transform duration-300 delay-75 text-neutral-600 dark:text-neutral-400">{project.description}</p>
                                     </div>
 
                                     <div className="flex justify-between items-end">

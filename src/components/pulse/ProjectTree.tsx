@@ -45,9 +45,9 @@ export function ProjectTree({ project, posts, theme = 'amber', onNodeClick }: Pr
         switch (t) {
             case 'amber': return { bg: 'transparent', text: '#ffb300', line: baseColor || '#cc8e00', node: baseColor || '#ffb300' }
             case 'green': return { bg: 'transparent', text: '#33ff33', line: baseColor || '#009900', node: baseColor || '#33ff33' }
-            case 'cga': return { bg: 'transparent', text: '#ff55ff', line: baseColor || '#55ffff', node: baseColor || '#ffffff' }
-            case 'gameboy': return { bg: 'transparent', text: '#0f380f', line: '#306230', node: '#306230' }
-            default: return { bg: 'transparent', text: '#ffffff', line: baseColor || '#ffffff', node: baseColor || '#ffffff' }
+            case 'cga': return { bg: 'transparent', text: '#ff55ff', line: '#55ffff', node: '#ffffff' }
+            case 'gameboy': return { bg: 'transparent', text: '#0f380f', line: '#306230', node: '#8bac0f' }
+            default: return { bg: 'transparent', text: '#666666', line: baseColor || '#333333', node: baseColor || '#333333' }
         }
     }
 
@@ -202,16 +202,16 @@ export function ProjectTree({ project, posts, theme = 'amber', onNodeClick }: Pr
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-transparent group-hover:border-inherit" />
 
                 {/* ID Tag on Hover */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 overflow-hidden h-0 group-hover:h-4 px-2 bg-white text-black text-[8px] font-bold tracking-[0.2em] uppercase transition-all whitespace-nowrap">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 overflow-hidden h-0 group-hover:h-4 px-2 bg-neutral-900 dark:bg-white text-white dark:text-black text-[8px] font-bold tracking-[0.2em] uppercase transition-all whitespace-nowrap">
                     SCOPE: {project.id.slice(0, 8)}
                 </div>
             </div>
 
             <div className="mb-4 text-center ">
-                <span className="text-[8px] uppercase tracking-[0.4em] opacity-40 block mb-1 group-hover:opacity-100 transition-opacity">
+                <span className="text-[8px] uppercase tracking-[0.4em] opacity-40 block mb-1 group-hover:opacity-100 transition-opacity text-black dark:text-white">
                     @{displayName}
                 </span>
-                <h3 className="text-[10px] font-bold tracking-widest bg-white/5 px-3 py-1 border border-white/10 group-hover:border-white/30 transition-colors"
+                <h3 className="text-[10px] font-bold tracking-widest bg-emerald-500/5 dark:bg-white/5 px-3 py-1 border border-emerald-500/20 dark:border-white/10 group-hover:border-emerald-500/40 dark:group-hover:border-white/30 transition-colors"
                     style={{ color: treeColor }}>
                     {project.name.toUpperCase()}
                 </h3>

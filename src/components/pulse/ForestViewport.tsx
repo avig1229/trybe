@@ -4,9 +4,10 @@ import React, { useState, useRef, useEffect } from 'react'
 
 interface ForestViewportProps {
     children: React.ReactNode
+    zoom?: number
 }
 
-export function ForestViewport({ children }: ForestViewportProps) {
+export function ForestViewport({ children, zoom = 1.0 }: ForestViewportProps) {
     const [offset, setOffset] = useState({ x: 0, y: 0 })
     const [isDragging, setIsDragging] = useState(false)
     const lastMousePos = useRef({ x: 0, y: 0 })
@@ -20,14 +21,28 @@ export function ForestViewport({ children }: ForestViewportProps) {
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging) return
-        const dx = e.clientX - lastMousePos.current.x
-        const dy = e.clientY - lastMousePos.current.y
+        const dx = (e.clientX - lastMousePos.current.x) / zoom
+        const dy = (e.clientY - lastMousePos.current.y) / zoom
         setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
         lastMousePos.current = { x: e.clientX, y: e.clientY }
     }
 
     const handleMouseUp = () => {
         setIsDragging(false)
+    }
+
+    // Touch Support
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setIsDragging(true)
+        lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    }
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return
+        const dx = (e.touches[0].clientX - lastMousePos.current.x) / zoom
+        const dy = (e.touches[0].clientY - lastMousePos.current.y) / zoom
+        setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+        lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     }
 
     // Prevent browser's default drag-scroll behavior
@@ -62,35 +77,43 @@ export function ForestViewport({ children }: ForestViewportProps) {
     return (
         <div
             ref={viewportRef}
-            className="relative w-full h-[calc(100vh-120px)] bg-black overflow-hidden cursor-grab active:cursor-grabbing border border-white/5"
+            className="relative w-full h-full bg-[var(--forest-bg)] overflow-hidden cursor-grab active:cursor-grabbing border-none transition-colors duration-1000"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleMouseUp}
         >
-            {/* Grid Pattern Background */}
+            {/* Day/Night Tiled Pattern */}
             <div
-                className="absolute inset-0 pointer-events-none opacity-10"
+                className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-30"
                 style={{
                     backgroundImage: `
-            linear-gradient(to right, #444 1px, transparent 1px),
-            linear-gradient(to bottom, #444 1px, transparent 1px)
-          `,
+                        linear-gradient(45deg, var(--forest-tile) 25%, transparent 25%),
+                        linear-gradient(-45deg, var(--forest-tile) 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, var(--forest-tile) 75%),
+                        linear-gradient(-45deg, transparent 75%, var(--forest-tile) 75%)
+                    `,
                     backgroundSize: '100px 100px',
+                    backgroundPosition: '0 0, 0 50px, 50px -50px, -50px 0px',
                     transform: `translate(${offset.x % 100}px, ${offset.y % 100}px)`
                 }}
             />
 
             {/* The Garden Content */}
             <div
-                className="absolute transition-transform duration-0 ease-linear"
-                style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+                className="absolute transition-transform duration-0 ease-linear origin-center"
+                style={{
+                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`
+                }}
             >
                 {children}
             </div>
 
             {/* Coordinate HUD */}
-            <div className="absolute top-4 right-4 text-[8px] font-mono opacity-30 pointer-events-none uppercase tracking-widest text-right">
+            <div className="absolute top-4 right-4 text-[8px] font-mono opacity-50 pointer-events-none uppercase tracking-widest text-right text-emerald-100 dark:text-neutral-500">
                 POS: [{Math.round(offset.x)}, {Math.round(offset.y)}]<br />
                 FOREST_LINK: STABLE<br />
                 SEEDS_LOADED: 100%<br />

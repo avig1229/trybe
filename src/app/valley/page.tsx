@@ -268,6 +268,7 @@ export default function ValleyPage() {
           <CollectivePulse
             posts={posts}
             projects={ecosystemProjects}
+            currentUserId={user?.id}
             onCreatePost={handleCreatePost}
             onLikePost={handleLikePost}
             onCommentPost={handleCommentPost}
@@ -356,6 +357,7 @@ export default function ValleyPage() {
                   recentPosts={globalPosts}
                   onSelectProject={handleSelectProject}
                   onCreateProject={handleCreateProject}
+                  onExploreForest={() => setCurrentView('pulse')}
                 />
               )}
             </div>
@@ -367,6 +369,7 @@ export default function ValleyPage() {
           <CollectivePulse
             posts={posts}
             projects={ecosystemProjects}
+            currentUserId={user?.id}
             onCreatePost={handleCreatePost}
             onLikePost={handleLikePost}
             onCommentPost={handleCommentPost}
@@ -393,7 +396,10 @@ export default function ValleyPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentView={currentView} onViewChange={setCurrentView} />
-      <main className="w-full px-4 md:px-8 py-8">
+      <main className={cn(
+        "w-full transition-all duration-300",
+        currentView === 'pulse' ? "px-0 py-0 h-[calc(100vh-5rem)]" : "px-4 md:px-8 py-8"
+      )}>
         {renderCurrentView()}
       </main>
       {isLocked && <DailyCheckIn onUnlock={handleUnlock} key={user?.id} />}
