@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Project, Post, TreeConfig } from '@/types'
+import { ProjectHoverCard } from './ProjectHoverCard'
+import { useRouter } from 'next/navigation'
 
 interface ProjectTreeProps {
     project: Project
@@ -19,7 +21,9 @@ const DEFAULT_CONFIG: TreeConfig = {
 }
 
 export function ProjectTree({ project, posts, theme = 'amber', onNodeClick }: ProjectTreeProps) {
+    const router = useRouter()
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const [isHovered, setIsHovered] = useState(false)
     const config = project.treeConfig || project.user?.defaultTreeConfig || DEFAULT_CONFIG
 
     // Map Tailwind classes to hex for canvas rendering
@@ -147,6 +151,44 @@ export function ProjectTree({ project, posts, theme = 'amber', onNodeClick }: Pr
                     ctx.arc(0, yPos, 6, 0, Math.PI * 2)
                     ctx.fill()
                     ctx.shadowBlur = 0
+
+                    // Engagement Branches (Comments)
+                    const commentCount = post.commentCount || 0
+                    if (commentCount > 0) {
+                        ctx.strokeStyle = palette.line
+                        ctx.lineWidth = 1.5 // Increased for visibility
+                        ctx.setLineDash([])
+
+                        for (let j = 0; j < Math.min(commentCount, 5); j++) {
+                            const angle = (j / Math.min(commentCount, 5)) * Math.PI * 2
+                            const totalLen = 25 + (Math.random() * 20) // Much longer (25-45px)
+                            const jointLen = totalLen * 0.4
+
+                            // First segment (Joint)
+                            const jx = Math.cos(angle) * jointLen
+                            const jy = yPos + Math.sin(angle) * jointLen
+
+                            // Second segment (Terminal) - slightly offset angle for organic feel
+                            const terminalAngle = angle + (Math.random() - 0.5) * 0.6
+                            const tx = jx + Math.cos(terminalAngle) * (totalLen - jointLen)
+                            const ty = jy + Math.sin(terminalAngle) * (totalLen - jointLen)
+
+                            ctx.beginPath()
+                            ctx.moveTo(0, yPos)
+                            ctx.lineTo(jx, jy)
+                            ctx.lineTo(tx, ty)
+                            ctx.stroke()
+
+                            // Terminal Node (More prominent)
+                            ctx.fillStyle = palette.node
+                            ctx.shadowBlur = 6
+                            ctx.shadowColor = palette.node
+                            ctx.beginPath()
+                            ctx.arc(tx, ty, 3, 0, Math.PI * 2) // Enlarged
+                            ctx.fill()
+                            ctx.shadowBlur = 0
+                        }
+                    }
                 }
             })
         } else {
@@ -192,8 +234,15 @@ export function ProjectTree({ project, posts, theme = 'amber', onNodeClick }: Pr
     return (
         <div
             className="flex flex-col items-center group cursor-pointer relative"
-            onClick={() => posts.length > 0 && onNodeClick?.(posts[posts.length - 1])}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={() => router.push(`/projects/${project.id}`)}
         >
+            {isHovered && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                    <ProjectHoverCard project={project} posts={posts} />
+                </div>
+            )}
             {/* Targeting Frame Overlay */}
             <div className="absolute -inset-12 border border-white/0 group-hover:border-white/20 transition-all duration-500 pointer-events-none">
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-transparent group-hover:border-inherit" />

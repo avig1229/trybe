@@ -159,11 +159,11 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold uppercase tracking-tighter">
-                                    {isFirstTime ? 'Your First Check-In' : 'Daily Check-In'}
+                                    {isFirstTime ? 'Elevator Pitch' : 'Daily Check-In'}
                                 </h1>
                                 <p className="text-sm font-light text-neutral-400">
                                     {isFirstTime
-                                        ? 'Welcome! Upload a 15-25s video to unlock your workspace. This is your "LoCommit" – a daily ritual to stay consistent.'
+                                        ? 'Welcome! Record a 15-25s elevator pitch for your project. This "LoCommit" will be featured as the preview for your project in the Forest to attract collaborators and feedback.'
                                         : 'Unlock your workspace. 15-25s update.'}
                                 </p>
                             </div>
@@ -243,9 +243,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <Upload className="h-6 w-6 text-white" />
                                 </div>
-                                <span className="text-xs uppercase tracking-widest font-bold">Upload Reel</span>
+                                <span className="text-xs uppercase tracking-widest font-bold">{isFirstTime ? 'Record Pitch' : 'Upload Reel'}</span>
                                 <span className="text-[10px] mt-2 opacity-50">9:16 Vertical Video</span>
-                                <span className="text-[10px] opacity-50">15s - 25s</span>
+                                <span className="text-[10px] opacity-50">15s - 25s Elevator Pitch</span>
                             </div>
                         ) : (
                             <>
@@ -276,7 +276,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="font-bold text-lg leading-tight line-clamp-2">{title || 'Untitled Update'}</h3>
+                                    <h3 className="font-bold text-lg leading-tight line-clamp-2">{title || (isFirstTime ? 'Project Pitch' : 'Untitled Update')}</h3>
                                     <p className="text-xs text-neutral-300 line-clamp-2 mt-1">{description || 'No description'}</p>
                                 </div>
 
