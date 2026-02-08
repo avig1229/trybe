@@ -72,6 +72,7 @@ CREATE TABLE projects (
 CREATE TABLE channels (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  parent_id UUID REFERENCES channels(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   color TEXT DEFAULT 'bg-neutral-700',

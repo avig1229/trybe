@@ -98,10 +98,10 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
 
             if (file.size > 50 * 1024 * 1024) {
                 setError('Video is too large. Maximum 50MB.')
-            } else if (video.duration < 15) {
-                setError('Video is too short. Minimum 15 seconds.')
-            } else if (video.duration > 25) {
-                setError('Video is too long. Maximum 25 seconds.')
+            } else if (video.duration < 13.5) {
+                setError('Video is too short. Minimum 13.5 seconds.')
+            } else if (video.duration > 26.5) {
+                setError('Video is too long. Maximum 26.5 seconds.')
             } else {
                 // Valid video, start background upload
                 startBackgroundUpload(file)
@@ -143,7 +143,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
         )
     }
 
-    const isValidDuration = duration >= 15 && duration <= 25
+    const isValidDuration = duration >= 13.5 && duration <= 26.5
     const canPost = isValidDuration && videoFile && !uploading && title.trim()
 
     return (
@@ -163,8 +163,8 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 </h1>
                                 <p className="text-sm font-light text-neutral-400">
                                     {isFirstTime
-                                        ? 'Welcome! Record a 15-25s elevator pitch for your project. This "LoCommit" will be featured as the preview for your project in the Forest to attract collaborators and feedback.'
-                                        : 'Unlock your workspace. 15-25s update.'}
+                                        ? 'Welcome! Upload a 15s (+/- 1.5s) video pitch for your project. This "LoCommit" will be featured as the preview for your project in the Forest to attract collaborators and feedback.'
+                                        : 'Unlock your workspace. 15s (+/- 1.5s) update.'}
                                 </p>
                             </div>
                         </div>
@@ -243,9 +243,9 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <Upload className="h-6 w-6 text-white" />
                                 </div>
-                                <span className="text-xs uppercase tracking-widest font-bold">{isFirstTime ? 'Record Pitch' : 'Upload Reel'}</span>
+                                <span className="text-xs uppercase tracking-widest font-bold">{isFirstTime ? 'Upload Pitch' : 'Upload Reel'}</span>
                                 <span className="text-[10px] mt-2 opacity-50">9:16 Vertical Video</span>
-                                <span className="text-[10px] opacity-50">15s - 25s Elevator Pitch</span>
+                                <span className="text-[10px] opacity-50">~15s Video Pitch</span>
                             </div>
                         ) : (
                             <>

@@ -30,7 +30,7 @@ export function CollectivePulse({
   // onSavePost,
   onViewPost
 }: CollectivePulseProps) {
-  const [theme, setTheme] = useState<Theme>('amber')
+  const [theme] = useState<Theme>('amber')
   const [zoom, setZoom] = useState(1.0)
 
   // Group posts by project and distribute trees spatially
@@ -79,20 +79,6 @@ export function CollectivePulse({
         <div className="pointer-events-auto">
           <h1 className="text-2xl font-bold tracking-tighter text-white">THE FOREST</h1>
           <p className="text-[10px] text-neutral-500 uppercase tracking-[0.3em] mt-1">Spatial Collective Pulse</p>
-        </div>
-
-        <div className="flex gap-2 pointer-events-auto">
-          {(['amber', 'green', 'cga', 'gameboy'] as Theme[]).map(t => (
-            <Button
-              key={t}
-              variant={theme === t ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTheme(t)}
-              className="uppercase text-[9px] h-7 rounded-none border-black/10 dark:border-white/10 transition-all font-mono"
-            >
-              {t}
-            </Button>
-          ))}
         </div>
       </header>
 

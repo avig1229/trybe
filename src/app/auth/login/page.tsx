@@ -108,6 +108,15 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {searchParams.get('confirmed') === 'false' && (
+          <Alert className="bg-blue-500/10 border-blue-500/50 text-blue-700 dark:text-blue-400">
+            <AlertDescription className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Please check your email and confirm your account before signing in.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

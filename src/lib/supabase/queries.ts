@@ -194,7 +194,16 @@ function mapProjectToDb(p: Partial<Project>): Partial<DbProject> {
 // Project queries
 export async function getProjects(userId?: string): Promise<Project[]> {
   // Fetch projects with their owner profiles to allow for tree customization
-  const base = supabase.from('projects').select('*, profiles(*)').order('created_at', { ascending: false })
+  const base = supabase.from('projects')
+    .select(`
+      id, user_id, name, description, color, status, is_public, tags, 
+      cover_image_url, tribe_id, garden_x, garden_y, tree_config, 
+      created_at, updated_at,
+      profiles (
+        id, username, full_name, avatar_url, default_tree_color, default_tree_config
+      )
+    `)
+    .order('created_at', { ascending: false })
 
   const { data, error } = userId
     ? await base.or(`user_id.eq.${userId},is_public.eq.true`)
@@ -211,7 +220,14 @@ export async function getProjects(userId?: string): Promise<Project[]> {
 export async function getUserProjects(userId: string): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects')
-    .select('*, profiles(*)')
+    .select(`
+      id, user_id, name, description, color, status, is_public, tags, 
+      cover_image_url, tribe_id, garden_x, garden_y, tree_config, 
+      created_at, updated_at,
+      profiles (
+        id, username, full_name, avatar_url, default_tree_color, default_tree_config
+      )
+    `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -278,8 +294,10 @@ export async function getTribes(): Promise<Tribe[]> {
   const { data, error } = await supabase
     .from('tribes')
     .select(`
-      *,
-      creator:profiles(*),
+      id, name, slug, description, cover_image_url, icon_url, 
+      creator_id, is_public, member_count, post_count, tags, 
+      created_at, updated_at,
+      creator:profiles(id, username, full_name, avatar_url),
       tribe_memberships!inner(*)
     `)
     .eq('is_public', true)
@@ -290,19 +308,24 @@ export async function getTribes(): Promise<Tribe[]> {
     return []
   }
 
-  return (data || []).map(tribe => ({
-    ...tribe,
+  return (data || []).map((tribe: any) => ({
+    ...mapTribeFromDb(tribe as DbTribe),
+    creator: tribe.creator?.[0] || tribe.creator,
     isMember: tribe.tribe_memberships?.length > 0,
     userRole: tribe.tribe_memberships?.[0]?.role,
-  })) as Tribe[]
+  })) as unknown as Tribe[]
 }
 
 export async function getUserTribes(userId: string): Promise<Tribe[]> {
   const { data, error } = await supabase
     .from('tribe_memberships')
     .select(`
-      *,
-      tribe:tribes(*, creator:profiles(*))
+      id, role, joined_at,
+      tribe:tribes(
+        id, name, slug, description, cover_image_url, icon_url, 
+        creator_id, is_public, member_count, post_count, tags,
+        creator:profiles(id, username, full_name, avatar_url)
+      )
     `)
     .eq('user_id', userId)
 
@@ -311,11 +334,12 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
     return []
   }
 
-  return (data || []).map(membership => ({
-    ...membership.tribe,
+  return (data || []).map((membership: any) => ({
+    ...mapTribeFromDb(membership.tribe as DbTribe),
+    creator: membership.tribe.creator?.[0] || membership.tribe.creator,
     isMember: true,
     userRole: membership.role,
-  })) as Tribe[]
+  })) as unknown as Tribe[]
 }
 
 // Helpers to map between DB snake_case and app camelCase for Tribes
@@ -482,10 +506,12 @@ export async function getPosts(limit = 50, offset = 0, projectId?: string, userI
   let query = supabase
     .from('posts')
     .select(`
-      *,
-      user:profiles(*),
-      project:projects(*),
-      tribe:tribes(*),
+      id, user_id, project_id, tribe_id, type, title, content, 
+      media_url, media_type, thumbnail_url, is_featured, view_count, 
+      created_at, updated_at,
+      user:profiles(id, username, full_name, avatar_url),
+      project:projects(id, name, color, status),
+      tribe:tribes(id, name, slug),
       likes:likes(count),
       comments:comments(count)
     `)
@@ -667,6 +693,7 @@ export async function unlikePost(userId: string, postId: string): Promise<boolea
 type DbChannel = {
   id: string
   project_id: string
+  parent_id?: string | null
   name: string
   description?: string | null
   color: string
@@ -680,6 +707,7 @@ function mapChannelFromDb(row: DbChannel): Channel {
   return {
     id: row.id,
     projectId: row.project_id,
+    parentId: row.parent_id || undefined,
     name: row.name,
     description: row.description || undefined,
     color: row.color,
@@ -694,6 +722,7 @@ function mapChannelToDb(c: Partial<Channel>): Partial<DbChannel> {
   const db: Partial<DbChannel> = {}
   if (c.id) db.id = c.id
   if (c.projectId) db.project_id = c.projectId
+  if (c.parentId) db.parent_id = c.parentId
   if (c.name) db.name = c.name
   if (c.description) db.description = c.description
   if (c.color) db.color = c.color
@@ -751,6 +780,25 @@ export async function deleteChannel(channelId: string): Promise<boolean> {
   return true
 }
 
+export async function updateChannel(channelId: string, updates: Partial<Channel>): Promise<Channel | null> {
+  const { data, error } = await supabase
+    .from('channels')
+    .update(mapChannelToDb(updates))
+    .eq('id', channelId)
+    .select(`
+      *,
+      blocks(*)
+    `)
+    .single()
+
+  if (error) {
+    console.error('Error updating channel:', error)
+    return null
+  }
+
+  return mapChannelFromDb(data as DbChannel)
+}
+
 // Helpers to map between DB snake_case and app camelCase for Blocks
 type DbBlock = {
   id: string
@@ -797,12 +845,30 @@ function mapBlockToDb(b: Partial<Block>): Partial<DbBlock> {
 export async function getBlocks(channelId: string): Promise<Block[]> {
   const { data, error } = await supabase
     .from('blocks')
-    .select('*')
+    .select('id, channel_id, type, title, content, description, metadata, order_index, created_at, updated_at')
     .eq('channel_id', channelId)
     .order('order_index', { ascending: true })
 
   if (error) {
     console.error('Error fetching blocks:', error)
+    return []
+  }
+
+  return ((data || []) as unknown as DbBlock[]).map(mapBlockFromDb)
+}
+
+export async function getProjectBlocks(projectId: string): Promise<Block[]> {
+  const { data, error } = await supabase
+    .from('blocks')
+    .select(`
+      id, channel_id, type, title, content, description, metadata, order_index, created_at, updated_at,
+      channels!inner(project_id)
+    `)
+    .eq('channels.project_id', projectId)
+    .order('order_index', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching project blocks:', error)
     return []
   }
 

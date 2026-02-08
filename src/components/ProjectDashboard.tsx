@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { FileText, Play } from 'lucide-react'
+import { FileText, Play, Edit2, Plus, Trash2, ChevronRight, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Project, Channel, Block, ProjectStatus, Post } from '@/types'
-import { getChannels, getBlocks, updateProject, getPosts, createChannel, deleteChannel } from '@/lib/supabase/queries'
+import { getChannels, getBlocks, updateProject, getPosts, createChannel, deleteChannel, updateChannel, getProjectBlocks } from '@/lib/supabase/queries'
 import { ResourceUploadModal } from './upload/ResourceUploadModal'
 import { ProgressUploadModal } from './upload/ProgressUploadModal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -34,6 +34,11 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [newChannelName, setNewChannelName] = useState('')
   const [isCreatingChannel, setIsCreatingChannel] = useState(false)
+  const [newSubChannelParentId, setNewSubChannelParentId] = useState<string | null>(null)
+
+  // Renaming State
+  const [renamingChannelId, setRenamingChannelId] = useState<string | null>(null)
+  const [renamingName, setRenamingName] = useState('')
 
   useEffect(() => {
     if (project) setStatus(project.status)
@@ -42,12 +47,14 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
   const loadData = async () => {
     if (!project?.id) return
     // setLoading(true)
-    const [chans, projectPosts] = await Promise.all([
+    const [chans, projectPosts, projectBlocks] = await Promise.all([
       getChannels(project.id),
-      getPosts(20, 0, project.id)
+      getPosts(20, 0, project.id),
+      getProjectBlocks(project.id)
     ])
     setChannels(chans)
     setPosts(projectPosts)
+    setBlocks(projectBlocks)
 
     // Select first channel if none selected, or if current selection is invalid
     if (chans.length > 0) {
@@ -57,9 +64,6 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     } else {
       setSelectedChannelId(null)
     }
-
-    const allBlocks = await Promise.all(chans.map((c) => getBlocks(c.id)))
-    setBlocks(allBlocks.flat())
     // setLoading(false)
   }
 
@@ -76,10 +80,11 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     if (updated) onProjectUpdated?.(updated)
   }
 
-  const handleCreateChannel = async () => {
+  const handleCreateChannel = async (parentId?: string) => {
     if (!project?.id || !newChannelName.trim()) return
     const created = await createChannel({
       projectId: project.id,
+      parentId: parentId,
       name: newChannelName.trim(),
       color: 'bg-neutral-900', // Default color
       orderIndex: channels.length
@@ -87,8 +92,19 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
     if (created) {
       setNewChannelName('')
       setIsCreatingChannel(false)
+      setNewSubChannelParentId(null)
       await loadData()
       setSelectedChannelId(created.id)
+    }
+  }
+
+  const handleRenameChannel = async (channelId: string) => {
+    if (!renamingName.trim()) return
+    const updated = await updateChannel(channelId, { name: renamingName.trim() })
+    if (updated) {
+      setChannels(prev => prev.map(c => c.id === channelId ? updated : c))
+      setRenamingChannelId(null)
+      setRenamingName('')
     }
   }
 
@@ -139,28 +155,34 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
         <div className="flex items-center gap-12 text-xs font-medium tracking-[0.2em] uppercase whitespace-nowrap">
           {(
             [
-              { id: 'overview', label: 'Overview' },
-              { id: 'resources', label: 'Resources' },
-              { id: 'progress', label: 'Progress' },
+              { id: 'overview', label: 'Overview', desc: 'The big picture of your project' },
+              { id: 'resources', label: 'Resources', desc: 'Organize your references and assets' },
+              { id: 'progress', label: 'Progress', desc: 'Document your journey with updates' },
             ] as const
           ).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as Tab)}
-              className={cn(
-                'transition-all duration-300 hover:opacity-100',
-                activeTab === (t.id as Tab)
-                  ? 'opacity-100'
-                  : 'opacity-40'
+            <div key={t.id} className="flex flex-col gap-2">
+              <button
+                onClick={() => setActiveTab(t.id as Tab)}
+                className={cn(
+                  'transition-all duration-300 hover:opacity-100',
+                  activeTab === (t.id as Tab)
+                    ? 'opacity-100'
+                    : 'opacity-40'
+                )}
+              >
+                {t.label}
+                {t.id !== 'overview' && (
+                  <sup className="ml-1 opacity-60">
+                    {t.id === 'resources' ? totalResources : progressUpdates}
+                  </sup>
+                )}
+              </button>
+              {activeTab === t.id && (
+                <span className="text-[10px] opacity-40 font-light lowercase tracking-normal italic animate-in fade-in slide-in-from-top-1">
+                  {t.desc}
+                </span>
               )}
-            >
-              {t.label}
-              {t.id !== 'overview' && (
-                <sup className="ml-1 opacity-60">
-                  {t.id === 'resources' ? totalResources : progressUpdates}
-                </sup>
-              )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -306,36 +328,126 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
             {/* Channel Navigation */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-neutral-100 dark:border-neutral-800 pb-4">
               <div className="flex items-center gap-8 overflow-x-auto no-scrollbar pb-2 md:pb-0">
-                {channels.map(channel => (
-                  <div key={channel.id} className="group relative flex items-center gap-2">
-                    <button
-                      onClick={() => setSelectedChannelId(channel.id)}
-                      className={cn(
-                        "text-xs uppercase tracking-[0.2em] transition-all whitespace-nowrap hover:opacity-100",
-                        selectedChannelId === channel.id ? "opacity-100 font-bold" : "opacity-40"
+                {/* Recursive Channel Rendering */}
+                {channels.filter(c => !c.parentId).map(channel => (
+                  <div key={channel.id} className="space-y-4">
+                    <div className="group relative flex items-center gap-2">
+                      {renamingChannelId === channel.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={renamingName}
+                            onChange={(e) => setRenamingName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleRenameChannel(channel.id)
+                              if (e.key === 'Escape') setRenamingChannelId(null)
+                            }}
+                            className="bg-transparent border-b border-black dark:border-white w-32 py-1 text-xs uppercase tracking-widest outline-none"
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedChannelId(channel.id)}
+                          className={cn(
+                            "text-xs uppercase tracking-[0.2em] transition-all whitespace-nowrap hover:opacity-100",
+                            selectedChannelId === channel.id ? "opacity-100 font-bold" : "opacity-40"
+                          )}
+                        >
+                          {channel.name}
+                          <span className="ml-2 opacity-50 text-[10px]">{channel.blockCount || 0}</span>
+                        </button>
                       )}
-                    >
-                      {channel.name}
-                      <span className="ml-2 opacity-50 text-[10px]">{channel.blockCount || 0}</span>
-                    </button>
-                    {selectedChannelId === channel.id && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteChannel(channel.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500"
-                        title="Delete Channel"
-                      >
-                        <span className="sr-only">Delete</span>
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    )}
+
+                      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setRenamingChannelId(channel.id)
+                            setRenamingName(channel.name)
+                          }}
+                          className="hover:text-blue-500"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsCreatingChannel(true)
+                            setNewSubChannelParentId(channel.id)
+                          }}
+                          className="hover:text-green-500"
+                          title="Add Sub-channel"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteChannel(channel.id)}
+                          className="hover:text-red-500"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sub-channels */}
+                    <div className="pl-6 space-y-2 border-l border-black/5 dark:border-white/5 ml-1">
+                      {channels.filter(sub => sub.parentId === channel.id).map(sub => (
+                        <div key={sub.id} className="group flex items-center gap-2">
+                          {renamingChannelId === sub.id ? (
+                            <input
+                              autoFocus
+                              value={renamingName}
+                              onChange={(e) => setRenamingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameChannel(sub.id)
+                                if (e.key === 'Escape') setRenamingChannelId(null)
+                              }}
+                              className="bg-transparent border-b border-black dark:border-white w-24 py-0.5 text-[10px] uppercase tracking-widest outline-none"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setSelectedChannelId(sub.id)}
+                              className={cn(
+                                "text-[10px] uppercase tracking-[0.2em] transition-all whitespace-nowrap hover:opacity-100",
+                                selectedChannelId === sub.id ? "opacity-100 font-bold" : "opacity-40"
+                              )}
+                            >
+                              {sub.name}
+                              <span className="ml-1 opacity-50">{sub.blockCount || 0}</span>
+                            </button>
+                          )}
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                            <button onClick={() => { setRenamingChannelId(sub.id); setRenamingName(sub.name) }} className="hover:text-blue-500">
+                              <Edit2 className="w-2.5 h-2.5" />
+                            </button>
+                            <button onClick={() => handleDeleteChannel(sub.id)} className="hover:text-red-500">
+                              <Trash2 className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {isCreatingChannel && newSubChannelParentId === channel.id && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                          <input
+                            autoFocus
+                            value={newChannelName}
+                            onChange={(e) => setNewChannelName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCreateChannel(channel.id)
+                              if (e.key === 'Escape') {
+                                setIsCreatingChannel(false)
+                                setNewSubChannelParentId(null)
+                              }
+                            }}
+                            className="bg-transparent border-b border-black dark:border-white w-24 py-0.5 text-[10px] uppercase tracking-widest outline-none"
+                            placeholder="SUB..."
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
 
-                {/* New Channel Input */}
-                {isCreatingChannel ? (
+                {/* New Top-level Channel Input */}
+                {isCreatingChannel && !newSubChannelParentId ? (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
                     <input
                       autoFocus
@@ -348,12 +460,15 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                       className="bg-transparent border-b border-black dark:border-white w-32 py-1 text-xs uppercase tracking-widest outline-none"
                       placeholder="NAME..."
                     />
-                    <button onClick={handleCreateChannel} className="text-[10px] uppercase font-bold hover:opacity-50">Add</button>
+                    <button onClick={() => handleCreateChannel()} className="text-[10px] uppercase font-bold hover:opacity-50">Add</button>
                     <button onClick={() => setIsCreatingChannel(false)} className="text-[10px] uppercase opacity-50 hover:opacity-100">Cancel</button>
                   </div>
                 ) : (
                   <button
-                    onClick={() => setIsCreatingChannel(true)}
+                    onClick={() => {
+                      setIsCreatingChannel(true)
+                      setNewSubChannelParentId(null)
+                    }}
                     className="text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 whitespace-nowrap flex items-center gap-1"
                   >
                     + New Channel
@@ -450,7 +565,7 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                     {/* Media - Full Width / Cinematic */}
                     <div className="w-full mb-8 bg-neutral-100 dark:bg-neutral-900 relative">
                       {post.mediaUrl ? (
-                        <div className={cn("w-full overflow-hidden", post.mediaType === 'video' ? "aspect-video" : "aspect-auto")}>
+                        <div className={cn("w-full overflow-hidden flex justify-center bg-black/5 dark:bg-black/40", post.mediaType === 'video' ? "min-h-[400px] max-h-[80vh]" : "aspect-auto")}>
                           {post.mediaType === 'video' ? (
                             playingVideo === post.id ? (
                               <video
@@ -458,21 +573,21 @@ export default function ProjectDashboard({ project, onProjectUpdated }: { projec
                                 controls
                                 preload="auto"
                                 autoPlay
-                                className="w-full h-full object-contain"
+                                className="h-full w-auto max-w-full object-contain mx-auto"
                               />
                             ) : (
                               <div
                                 onClick={() => setPlayingVideo(post.id)}
-                                className="relative w-full h-full cursor-pointer"
+                                className="relative h-full w-auto max-w-full cursor-pointer flex justify-center"
                               >
                                 <video
                                   preload="metadata"
                                   src={post.mediaUrl}
-                                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                                  className="h-full w-auto max-w-full object-contain opacity-90 group-hover:opacity-100 transition-opacity"
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="w-20 h-20 rounded-full border border-white/50 flex items-center justify-center backdrop-blur-sm transition-transform duration-500 group-hover:scale-110">
-                                    <Play className="h-6 w-6 fill-white text-white ml-1" strokeWidth={1} />
+                                  <div className="w-16 h-16 rounded-full border border-white/50 flex items-center justify-center backdrop-blur-sm transition-transform duration-500 group-hover:scale-110">
+                                    <Play className="h-5 w-5 fill-white text-white ml-1" strokeWidth={1} />
                                   </div>
                                 </div>
                               </div>

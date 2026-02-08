@@ -64,12 +64,12 @@ export default function SignupPage() {
           console.log('Profile will be created after email confirmation')
         }
 
-        setMessage('Account created! Check your email to confirm your account.')
+        setMessage('Account created! IMPORTANT: Please check your email to confirm your account BEFORE logging in.')
 
-        // Redirect after a short delay
+        // Redirect after a longer delay to ensure they read it
         setTimeout(() => {
-          router.push('/auth/login')
-        }, 2000)
+          router.push('/auth/login?confirmed=false')
+        }, 4000)
       }
     } catch (err) {
       console.error(err)

@@ -95,6 +95,7 @@ export interface TreeConfig {
 export interface Channel {
   id: string
   projectId: string
+  parentId?: string
   name: string
   description?: string
   color: string

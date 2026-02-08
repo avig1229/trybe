@@ -10,7 +10,7 @@ import ProjectList from '@/components/ProjectList'
 import { CollectivePulse } from '@/components/collective-pulse'
 import { Tribes } from '@/components/tribes'
 import { Button } from '@/components/ui/button'
-import { Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Loader2, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react'
 import { View, Project, Post, Tribe } from '@/types'
 // ... imports ...
 import { HomeDashboard } from '@/components/HomeDashboard'
@@ -74,20 +74,19 @@ export default function ValleyPage() {
     const loadProjectsAndPosts = async () => {
       if (!user) return
       try {
-        // Fetch projects for the Forest/Ecosystem (Public + User's)
-        const allProjs = await getProjects(user.id)
+        // Parallelize fetching to avoid waterfalls
+        const [allProjs, personal, recent] = await Promise.all([
+          getProjects(user.id),
+          getUserProjects(user.id),
+          getPosts(200)
+        ])
+
         setEcosystemProjects(allProjs)
-
-        // Fetch user projects for the Valley sidebar
-        const personal = await getUserProjects(user.id)
         setUserProjects(personal)
-
-        // Fetch recent posts for the Pulse/Forest
-        const recent = await getPosts(200)
         setGlobalPosts(recent)
         setPosts(recent)
       } catch (e) {
-        console.error(e)
+        console.error('Error loading data:', e)
       }
     }
 
@@ -286,6 +285,18 @@ export default function ValleyPage() {
               )}
             >
               <div className="sticky top-0 h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar space-y-12">
+                {/* Intro Guidance */}
+                {!sidebarCollapsed && (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-2 animate-in fade-in slide-in-from-top-4 duration-1000">
+                    <h3 className="text-[10px] uppercase tracking-widest font-bold opacity-50 flex items-center gap-2">
+                      <HelpCircle className="h-3 w-3" /> Welcome to the Valley
+                    </h3>
+                    <p className="text-[10px] leading-relaxed text-neutral-400">
+                      This is your private creative sanctum. Organize your projects into channels and blocks, and document your flow.
+                    </p>
+                  </div>
+                )}
+
                 {/* Collapse Toggle */}
                 <div className="flex justify-end">
                   <button
@@ -395,7 +406,7 @@ export default function ValleyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation currentView={currentView} onViewChange={setCurrentView} />
+      <Navigation currentView={currentView} onViewChange={setCurrentView} onCreate={handleCreateProject} />
       <main className={cn(
         "w-full transition-all duration-300",
         currentView === 'pulse' ? "px-0 py-0 h-[calc(100vh-5rem)]" : "px-4 md:px-8 py-8"

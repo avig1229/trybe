@@ -20,9 +20,10 @@ import { View } from '@/types'
 interface NavigationProps {
   currentView: View
   onViewChange: (view: View) => void
+  onCreate?: () => void
 }
 
-export function Navigation({ currentView, onViewChange }: NavigationProps) {
+export function Navigation({ currentView, onViewChange, onCreate }: NavigationProps) {
   const { user, profile, signOut } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
@@ -101,7 +102,10 @@ export function Navigation({ currentView, onViewChange }: NavigationProps) {
             </button>
 
             {/* Create Button - Minimal */}
-            <button className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">
+            <button
+              onClick={onCreate}
+              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+            >
               <Plus className="h-3 w-3" />
               <span>Create</span>
             </button>
