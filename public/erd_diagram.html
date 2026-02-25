@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Trybe Database ERD</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            background: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .mermaid {
+            max-width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="mermaid">
+        erDiagram
+        auth_users {
+        uuid id PK
+        }
+        profiles {
+        uuid id PK
+        text username
+        text full_name
+        text avatar_url
+        text bio
+        text skills
+        text creative_philosophy
+        }
+        tribes {
+        uuid id PK
+        text name
+        text slug
+        uuid creator_id FK
+        boolean is_public
+        integer member_count
+        text tags
+        }
+        tribe_memberships {
+        uuid id PK
+        uuid tribe_id FK
+        uuid user_id FK
+        text role
+        }
+        projects {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text description
+        text status
+        boolean is_public
+        text tags
+        uuid tribe_id FK
+        }
+        channels {
+        uuid id PK
+        uuid project_id FK
+        uuid parent_id FK
+        text name
+        integer order_index
+        }
+        blocks {
+        uuid id PK
+        uuid channel_id FK
+        text type
+        text content
+        jsonb metadata
+        integer order_index
+        }
+        posts {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        uuid tribe_id FK
+        text type
+        text content
+        text media_url
+        integer view_count
+        }
+        likes {
+        uuid id PK
+        uuid user_id FK
+        uuid post_id FK
+        text type
+        }
+        comments {
+        uuid id PK
+        uuid user_id FK
+        uuid post_id FK
+        uuid parent_comment_id FK
+        text content
+        }
+        collaboration_requests {
+        uuid id PK
+        uuid requester_id FK
+        uuid project_id FK
+        text message
+        text status
+        }
+        notifications {
+        uuid id PK
+        uuid user_id FK
+        text type
+        text message
+        boolean is_read
+        }
+        follows {
+        uuid id PK
+        uuid follower_id FK
+        uuid following_id FK
+        }
+        project_saves {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        }
+        auth_users ||--|| profiles : "extends"
+        auth_users ||--o{ projects : "owns"
+        auth_users ||--o{ tribes : "creates"
+        auth_users ||--o{ posts : "authors"
+        auth_users ||--o{ likes : "gives"
+        auth_users ||--o{ comments : "writes"
+        auth_users ||--o{ notifications : "receives"
+        auth_users ||--o{ follows : "follower"
+        auth_users ||--o{ project_saves : "saves"
+        auth_users ||--o{ collaboration_requests : "requests"
+        auth_users ||--o{ tribe_memberships : "joins"
+        tribes ||--o{ tribe_memberships : "has_members"
+        tribes ||--o{ projects : "contains"
+        tribes ||--o{ posts : "hosts"
+        projects ||--o{ channels : "organizes"
+        projects ||--o{ posts : "generates"
+        projects ||--o{ collaboration_requests : "receives"
+        projects ||--o{ project_saves : "bookmarked"
+        channels ||--o{ blocks : "contains"
+        channels ||--o{ channels : "nests"
+        posts ||--o{ likes : "receives"
+        posts ||--o{ comments : "receives"
+        comments ||--o{ comments : "threads"
+    </div>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            er: {
+                useMaxWidth: false
+            }
+        });
+    </script>
+</body>
+
+</html>
