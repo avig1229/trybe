@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRYBE — Capstone Defense</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Space+Grotesk:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #050505;
+            --green: #4ade80;
+            --g15: rgba(74, 222, 128, 0.15);
+            --g08: rgba(74, 222, 128, 0.08);
+            --t1: #fff;
+            --t2: rgba(255, 255, 255, 0.6);
+            --t3: rgba(255, 255, 255, 0.35);
+            --t4: rgba(255, 255, 255, 0.2);
+            --bd: rgba(255, 255, 255, 0.08);
+            --ff: 'Space Grotesk', sans-serif;
+            --fb: 'Inter', sans-serif
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: var(--fb);
+            color: var(--t2)
+        }
+
+        /* PRESENTATION MODE */
+        .deck {
+            display: flex;
+            transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100vh;
+            width: 700vw
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column
+        }
+
+        .slide-inner {
+            padding: 5vh 5vw;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            position: relative;
+            z-index: 2
+        }
+
+        /* Entrance animations */
+        .slide .anim {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.6s ease, transform 0.6s ease
+        }
+
+        .slide.active .anim {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        .slide.active .anim.d1 {
+            transition-delay: 0.15s
+        }
+
+        .slide.active .anim.d2 {
+            transition-delay: 0.3s
+        }
+
+        .slide.active .anim.d3 {
+            transition-delay: 0.45s
+        }
+
+        .slide.active .anim.d4 {
+            transition-delay: 0.6s
+        }
+
+        /* Progress bar */
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: var(--green);
+            z-index: 100;
+            transition: width 0.5s ease
+        }
+
+        /* Slide counter */
+        .counter {
+            position: fixed;
+            bottom: 20px;
+            right: 24px;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: var(--t4);
+            z-index: 100;
+            text-transform: uppercase;
+            font-family: var(--fb)
+        }
+
+        /* Nav hint */
+        .nav-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 24px;
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            color: var(--t4);
+            z-index: 100;
+            text-transform: uppercase;
+            opacity: 0.6
+        }
+
+        /* Toolbar */
+        .toolbar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 200
+        }
+
+        .toolbar button {
+            background: var(--bg);
+            color: var(--green);
+            border: 1px solid var(--g15);
+            padding: 8px 20px;
+            font-family: var(--fb);
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: all 0.2s
+        }
+
+        .toolbar button:hover {
+            background: var(--green);
+            color: #000
+        }
+
+        /* Typography */
+        h1,
+        h2,
+        h3 {
+            font-family: var(--ff);
+            text-transform: uppercase;
+            color: var(--t1)
+        }
+
+        .slide-num {
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            color: var(--t4);
+            margin-bottom: 8px
+        }
+
+        .slide-title {
+            font-size: clamp(36px, 4.5vw, 52px);
+            font-weight: 700;
+            color: var(--t1);
+            letter-spacing: -1.5px;
+            line-height: 1;
+            margin-bottom: 8px
+        }
+
+        .slide-sub {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--green);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            margin-bottom: 28px
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid var(--bd);
+            padding-top: 28px
+        }
+
+        /* Footer */
+        .slide-foot {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            border-top: 1px solid var(--bd);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5vw;
+            z-index: 3
+        }
+
+        .slide-foot span {
+            font-size: 8px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--t4)
+        }
+
+        /* TITLE SLIDE */
+        .title-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-bottom: 5vh
+        }
+
+        .title-layout h1 {
+            font-size: clamp(80px, 12vw, 140px);
+            line-height: 0.88;
+            letter-spacing: -5px;
+            margin-bottom: 16px
+        }
+
+        .title-layout .tagline {
+            font-size: clamp(14px, 1.4vw, 20px);
+            color: var(--t2);
+            max-width: 520px;
+            font-weight: 300;
+            line-height: 1.5;
+            margin-bottom: 24px
+        }
+
+        .meta-line {
+            font-size: 10px;
+            color: var(--t4);
+            letter-spacing: 0.2em;
+            text-transform: uppercase
+        }
+
+        /* Tiles */
+        .tile-grid {
+            display: grid;
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd);
+            flex: 1
+        }
+
+        .tile-grid-3 {
+            grid-template-columns: repeat(3, 1fr)
+        }
+
+        .tile {
+            background: var(--bg);
+            padding: clamp(20px, 2.5vw, 36px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .tile-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: var(--green);
+            text-transform: uppercase
+        }
+
+        .tile h3 {
+            font-size: clamp(16px, 1.6vw, 22px);
+            letter-spacing: -0.5px
+        }
+
+        .tile p {
+            font-size: clamp(11px, 1.1vw, 14px);
+            line-height: 1.6;
+            color: var(--t2)
+        }
+
+        /* Pillar list */
+        .pillar-list {
+            list-style: none;
+            flex: 1
+        }
+
+        .pillar-list li {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--bd);
+            display: flex;
+            gap: 20px;
+            align-items: center
+        }
+
+        .p-icon {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--g15);
+            background: var(--g08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0
+        }
+
+        .p-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--green);
+            text-transform: uppercase
+        }
+
+        .p-name {
+            font-family: var(--ff);
+            font-size: clamp(16px, 1.8vw, 22px);
+            font-weight: 700;
+            color: var(--t1);
+            text-transform: uppercase;
+            letter-spacing: -0.5px
+        }
+
+        .p-desc {
+            font-size: 11px;
+            color: var(--t3)
+        }
+
+        /* Tech grid */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd)
+        }
+
+        .tech-cell {
+            background: var(--bg);
+            padding: clamp(14px, 1.5vw, 22px);
+            display: flex;
+            flex-direction: column;
+            gap: 5px
+        }
+
+        .tech-cell .lb {
+            font-size: 8px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--t4)
+        }
+
+        .tech-cell .vl {
+            font-family: var(--ff);
+            font-size: clamp(12px, 1.2vw, 16px);
+            font-weight: 700;
+            color: var(--t1)
+        }
+
+        .tech-cell .dt {
+            font-size: 10px;
+            color: var(--t3);
+            line-height: 1.5
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd);
+            margin-top: auto
+        }
+
+        .stat-cell {
+            background: var(--bg);
+            padding: 16px;
+            text-align: center
+        }
+
+        .stat-cell .nm {
+            font-family: var(--ff);
+            font-size: clamp(18px, 2vw, 26px);
+            font-weight: 700;
+            color: var(--green)
+        }
+
+        .stat-cell .ds {
+            font-size: 8px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--t4);
+            margin-top: 3px
+        }
+
+        /* Demo */
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            flex: 1
+        }
+
+        .demo-panel {
+            border: 1px solid var(--bd);
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .demo-panel-hd {
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--bd);
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .demo-panel-hd .dot {
+            width: 5px;
+            height: 5px;
+            background: var(--green);
+            opacity: 0.5
+        }
+
+        .demo-panel-hd span {
+            font-size: 8px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--t4)
+        }
+
+        .demo-panel-bd {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            position: relative
+        }
+
+        .achv {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd)
+        }
+
+        .achv li {
+            background: var(--bg);
+            padding: 10px 16px;
+            font-size: 11px;
+            color: var(--t2);
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .achv .ck {
+            color: var(--green);
+            font-size: 10px;
+            flex-shrink: 0
+        }
+
+        /* Analysis */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd);
+            flex: 1
+        }
+
+        .analysis-col {
+            background: var(--bg);
+            padding: clamp(20px, 2.5vw, 30px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px
+        }
+
+        .a-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start
+        }
+
+        .a-item .tg {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border: 1px solid var(--bd);
+            color: var(--t3);
+            flex-shrink: 0;
+            margin-top: 2px
+        }
+
+        .a-item h4 {
+            font-family: var(--ff);
+            font-size: clamp(12px, 1.2vw, 15px);
+            font-weight: 700;
+            color: var(--t1);
+            text-transform: uppercase;
+            letter-spacing: -0.3px;
+            margin-bottom: 3px
+        }
+
+        .a-item p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--t3)
+        }
+
+        .future-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--bd);
+            border: 1px solid var(--bd);
+            margin-top: auto
+        }
+
+        .future-cell {
+            background: var(--bg);
+            padding: 14px 16px
+        }
+
+        .future-cell .ic {
+            font-size: 14px;
+            margin-bottom: 4px
+        }
+
+        .future-cell h5 {
+            font-family: var(--ff);
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--t1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 3px
+        }
+
+        .future-cell p {
+            font-size: 9px;
+            color: var(--t4);
+            line-height: 1.4
+        }
+
+        /* Closing */
+        .closing {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 40px
+        }
+
+        .closing-q {
+            font-size: clamp(24px, 3.5vw, 40px);
+            font-weight: 300;
+            color: var(--t1);
+            max-width: 680px;
+            line-height: 1.3
+        }
+
+        .closing-q em {
+            font-style: normal;
+            color: var(--green);
+            font-weight: 700
+        }
+
+        .closing-brand h2 {
+            letter-spacing: 12px;
+            font-size: 20px
+        }
+
+        .closing-brand .url {
+            font-size: 10px;
+            color: var(--t4);
+            letter-spacing: 0.2em;
+            margin-top: 6px
+        }
+
+        /* Canvas wrappers */
+        .tree-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.3
+        }
+
+        .tree-bg canvas {
+            width: 100%;
+            height: 100%
+        }
+
+        .mini-graph {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap
+        }
+
+        .mini-graph .c {
+            width: 7px;
+            height: 7px
+        }
+
+        /* Particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden
+        }
+
+        /* Scroll mode styles */
+        body.scroll-mode {
+            overflow-y: auto;
+            overflow-x: hidden
+        }
+
+        body.scroll-mode .deck {
+            flex-direction: column;
+            width: 100%;
+            height: auto;
+            transform: none !important;
+            transition: none
+        }
+
+        body.scroll-mode .slide {
+            width: 100%;
+            height: 100vh;
+            flex-shrink: 0
+        }
+
+        body.scroll-mode .counter,
+        .scroll-mode .nav-hint,
+        .scroll-mode .progress {
+            display: none
+        }
+
+        body.scroll-mode .toolbar {
+            position: fixed
+        }
+
+        @media print {
+            body {
+                overflow: visible !important
+            }
+
+            .deck {
+                flex-direction: column !important;
+                width: 100% !important;
+                height: auto !important;
+                transform: none !important
+            }
+
+            .slide {
+                width: 100vw !important;
+                height: 100vh !important;
+                page-break-after: always;
+                break-after: page
+            }
+
+            .toolbar,
+            .counter,
+            .nav-hint,
+            .progress,
+            .particles {
+                display: none !important
+            }
+
+            @page {
+                size: landscape;
+                margin: 0
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="progress" id="progress"></div>
+    <div class="counter" id="counter">01 / 07</div>
+    <div class="nav-hint">← → Arrow Keys to Navigate</div>
+
+    <div class="deck" id="deck">
+
+        <!-- SLIDE 1: TITLE -->
+        <div class="slide active" id="s1">
+            <div class="tree-bg"><canvas id="heroC"></canvas></div>
+            <div class="particles" id="p1"></div>
+            <div class="slide-inner">
+                <div class="title-layout">
+                    <div class="meta-line anim" style="margin-bottom:24px">Capstone Defense · 2026</div>
+                    <h1 class="anim d1">TRYBE</h1>
+                    <p class="tagline anim d2">A process-first platform for indie creators to structure their chaos,
+                        build in public, and find their people.</p>
+                    <div class="meta-line anim d3">Abihnash · Minerva University · trybe-six.vercel.app</div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>01 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 2: PROBLEM -->
+        <div class="slide" id="s2">
+            <div class="particles" id="p2"></div>
+            <div class="slide-inner">
+                <span class="slide-num anim">02 / 07</span>
+                <h2 class="slide-title anim d1">The Problem</h2>
+                <span class="slide-sub anim d1">Why current tools fail creators</span>
+                <div class="content anim d2" style="border:none;padding:0">
+                    <div class="tile-grid tile-grid-3">
+                        <div class="tile"><span class="tile-label">01 · Tools</span>
+                            <h3>Fragmentation</h3>
+                            <p>Creators scatter work across Pinterest, Notion, Figma, and Slack. No single workspace
+                                unifies the creative lifecycle.</p>
+                        </div>
+                        <div class="tile"><span class="tile-label">02 · Social</span>
+                            <h3>Creative Isolation</h3>
+                            <p>Solo creators lack daily standups or studio critiques. No forcing function for
+                                consistency.</p>
+                        </div>
+                        <div class="tile"><span class="tile-label">03 · Culture</span>
+                            <h3>Survivorship Bias</h3>
+                            <p>Platforms like Behance reward only polished finals. The messy process — where growth
+                                happens — stays invisible.</p>
+                        </div>
+                    </div>
+                    <div
+                        style="padding:20px 30px;border:1px solid var(--bd);border-top:none;background:rgba(255,255,255,0.02)">
+                        <p style="font-size:12px;color:var(--t3);font-style:italic">"Existing tools force you to choose
+                            between private productivity and public performance. Trybe unifies them."</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>02 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 3: PILLARS -->
+        <div class="slide" id="s3">
+            <div class="slide-inner">
+                <span class="slide-num anim">03 / 07</span>
+                <h2 class="slide-title anim d1">Architecture</h2>
+                <span class="slide-sub anim d1">Three interconnected pillars</span>
+                <div class="content anim d2"
+                    style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:32px;border:none;padding-top:20px">
+                    <ul class="pillar-list">
+                        <li>
+                            <div class="p-icon">🏔️</div>
+                            <div><span class="p-label">Structure</span>
+                                <div class="p-name">Project Valley</div><span class="p-desc">Deep-work dashboard ·
+                                    Projects → Channels → Blocks</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="p-icon">🔒</div>
+                            <div><span class="p-label">Accountability</span>
+                                <div class="p-name">LoCommit Engine</div><span class="p-desc">Daily "soft lock" —
+                                    contribute before you consume</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="p-icon">🌲</div>
+                            <div><span class="p-label">Community</span>
+                                <div class="p-name">The Forest</div><span class="p-desc">Spatial visualization — every
+                                    project is a living tree</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <div
+                        style="border:1px solid var(--bd);background:rgba(255,255,255,0.02);padding:20px;display:flex;flex-direction:column;gap:14px">
+                        <span style="font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:var(--t4)">Data
+                            Flow</span>
+                        <div
+                            style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:8px">
+                            <div style="display:flex;align-items:center;gap:10px"><span
+                                    style="font-size:10px;color:var(--green);font-weight:700">01</span><span
+                                    style="font-size:12px;color:var(--t2)">Create project in <strong
+                                        style="color:var(--t1)">Valley</strong></span></div>
+                            <div style="width:1px;height:14px;background:var(--bd);margin-left:12px"></div>
+                            <div style="display:flex;align-items:center;gap:10px"><span
+                                    style="font-size:10px;color:var(--green);font-weight:700">02</span><span
+                                    style="font-size:12px;color:var(--t2)">Post daily update via <strong
+                                        style="color:var(--t1)">LoCommit</strong></span></div>
+                            <div style="width:1px;height:14px;background:var(--bd);margin-left:12px"></div>
+                            <div style="display:flex;align-items:center;gap:10px"><span
+                                    style="font-size:10px;color:var(--green);font-weight:700">03</span><span
+                                    style="font-size:12px;color:var(--t2)">Tree grows in the <strong
+                                        style="color:var(--t1)">Forest</strong></span></div>
+                        </div>
+                        <div class="mini-graph" id="flowGraph"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>03 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 4: TECH -->
+        <div class="slide" id="s4">
+            <div class="slide-inner">
+                <span class="slide-num anim">04 / 07</span>
+                <h2 class="slide-title anim d1">Tech Stack</h2>
+                <span class="slide-sub anim d1">Architecture & key decisions</span>
+                <div class="content anim d2" style="gap:16px;border:none;padding-top:12px">
+                    <div class="tech-grid">
+                        <div class="tech-cell"><span class="lb">Frontend</span><span class="vl">Next.js 15</span><span
+                                class="dt">Hybrid SSR/CSR, App Router</span></div>
+                        <div class="tech-cell"><span class="lb">Backend</span><span class="vl">Supabase</span><span
+                                class="dt">Auth + DB + Storage + Edge</span></div>
+                        <div class="tech-cell"><span class="lb">Database</span><span class="vl">PostgreSQL</span><span
+                                class="dt">Normalized 3NF, hierarchical</span></div>
+                        <div class="tech-cell"><span class="lb">Security</span><span class="vl">Row Level
+                                Security</span><span class="dt">30+ policies at DB engine level</span></div>
+                        <div class="tech-cell"><span class="lb">Styling</span><span class="vl">Tailwind +
+                                Radix</span><span class="dt">Glassmorphism, WCAG a11y</span></div>
+                        <div class="tech-cell"><span class="lb">Deployment</span><span class="vl">Vercel
+                                Edge</span><span class="dt">Global CDN, Edge Middleware</span></div>
+                        <div class="tech-cell"><span class="lb">Search</span><span class="vl">pg_trgm + GIN</span><span
+                                class="dt">Fuzzy full-text, no Algolia</span></div>
+                        <div class="tech-cell"><span class="lb">Storage</span><span class="vl">Supabase
+                                Buckets</span><span class="dt">4 buckets, 30s video validation</span></div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-cell">
+                            <div class="nm">12</div>
+                            <div class="ds">Tables</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="nm">30+</div>
+                            <div class="ds">RLS Policies</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="nm">20+</div>
+                            <div class="ds">Indexes</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="nm">&lt;100ms</div>
+                            <div class="ds">Response</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>04 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 5: OUTCOMES -->
+        <div class="slide" id="s5">
+            <div class="slide-inner">
+                <span class="slide-num anim">05 / 07</span>
+                <h2 class="slide-title anim d1">Key Outcomes</h2>
+                <span class="slide-sub anim d1">What was built & delivered</span>
+                <div class="content anim d2" style="gap:12px;border:none;padding-top:12px">
+                    <div class="demo-grid">
+                        <div class="demo-panel">
+                            <div class="demo-panel-hd">
+                                <div class="dot"></div><span>Project Valley</span>
+                            </div>
+                            <div class="demo-panel-bd"><canvas id="valleyC"></canvas></div>
+                        </div>
+                        <div class="demo-panel">
+                            <div class="demo-panel-hd">
+                                <div class="dot"></div><span>LoCommit Check-In</span>
+                            </div>
+                            <div class="demo-panel-bd"><canvas id="lockC"></canvas></div>
+                        </div>
+                        <div class="demo-panel">
+                            <div class="demo-panel-hd">
+                                <div class="dot"></div><span>The Forest</span>
+                            </div>
+                            <div class="demo-panel-bd"><canvas id="forestC"></canvas></div>
+                        </div>
+                    </div>
+                    <ul class="achv">
+                        <li><span class="ck">✓</span>Full auth (Email, Magic Links, Google OAuth)</li>
+                        <li><span class="ck">✓</span>Hierarchical projects (Project → Channel → Block)</li>
+                        <li><span class="ck">✓</span>LoCommit daily accountability w/ timezone lock</li>
+                        <li><span class="ck">✓</span>Spatial Forest visualization (Fermat's Spiral)</li>
+                        <li><span class="ck">✓</span>GitHub-style contribution heatmap (0-4)</li>
+                        <li><span class="ck">✓</span>Storage engine w/ video validation (30s max)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>05 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 6: ANALYSIS -->
+        <div class="slide" id="s6">
+            <div class="slide-inner">
+                <span class="slide-num anim">06 / 07</span>
+                <h2 class="slide-title anim d1">Analysis</h2>
+                <span class="slide-sub anim d1">Strengths, limitations & future</span>
+                <div class="content anim d2" style="gap:12px;border:none;padding-top:12px">
+                    <div class="analysis-grid">
+                        <div class="analysis-col">
+                            <span class="tile-label" style="margin-bottom:2px">Strengths</span>
+                            <div class="a-item"><span class="tg">System</span>
+                                <div>
+                                    <h4>Behavioral Forcing Function</h4>
+                                    <p>LoCommit structurally requires contribution — not a passive tool</p>
+                                </div>
+                            </div>
+                            <div class="a-item"><span class="tg">Security</span>
+                                <div>
+                                    <h4>Architecture-Level Privacy</h4>
+                                    <p>RLS at the DB engine; security is a guarantee, not afterthought</p>
+                                </div>
+                            </div>
+                            <div class="a-item"><span class="tg">Search</span>
+                                <div>
+                                    <h4>Native Full-Text Search</h4>
+                                    <p>pg_trgm eliminates external service dependencies</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-col">
+                            <span class="tile-label" style="margin-bottom:2px">Limitations</span>
+                            <div class="a-item"><span class="tg">TZ</span>
+                                <div>
+                                    <h4>Fixed Global Reset</h4>
+                                    <p>9 AM UTC+8; per-user timezone is the planned next step</p>
+                                </div>
+                            </div>
+                            <div class="a-item"><span class="tg">Scope</span>
+                                <div>
+                                    <h4>Tribes Not Shipped</h4>
+                                    <p>Schema defined; UX constrained by solo developer timeline</p>
+                                </div>
+                            </div>
+                            <div class="a-item"><span class="tg">RT</span>
+                                <div>
+                                    <h4>Optimistic UI Only</h4>
+                                    <p>No WebSockets; pragmatic trade-off for robustness</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="future-row">
+                        <div class="future-cell">
+                            <div class="ic">👥</div>
+                            <h5>Tribes</h5>
+                            <p>Creator-led micro-communities</p>
+                        </div>
+                        <div class="future-cell">
+                            <div class="ic">🤖</div>
+                            <h5>AI Portfolio</h5>
+                            <p>LLM case studies from daily logs</p>
+                        </div>
+                        <div class="future-cell">
+                            <div class="ic">🌍</div>
+                            <h5>Per-User TZ</h5>
+                            <p>Personalized daily reset</p>
+                        </div>
+                        <div class="future-cell">
+                            <div class="ic">📊</div>
+                            <h5>Analytics</h5>
+                            <p>Creator engagement dashboard</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>06 / 07</span></div>
+        </div>
+
+        <!-- SLIDE 7: CLOSING -->
+        <div class="slide" id="s7">
+            <div class="tree-bg"><canvas id="closeC"></canvas></div>
+            <div class="particles" id="p7"></div>
+            <div class="slide-inner">
+                <div class="closing">
+                    <p class="closing-q anim">"Connection comes from<br><em>shared struggle</em>,<br>not just shared
+                        success."</p>
+                    <div class="closing-brand anim d1">
+                        <h2>TRYBE</h2>
+                        <div class="url">trybe-six.vercel.app</div>
+                    </div>
+                    <div class="anim d2"
+                        style="font-size:11px;color:var(--t4);letter-spacing:0.15em;text-transform:uppercase">Thank you
+                        · Questions?</div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>07 / 07</span></div>
+        </div>
+
+    </div>
+
+    <div class="toolbar" id="toolbar">
+        <button onclick="toggleMode()">Scroll Mode</button>
+        <button onclick="window.print()">Print PDF</button>
+        <button onclick="exportPDF()">Export PDF</button>
+    </div>
+
+    <script>
+        /* ═══ SLIDE NAVIGATION ═══ */
+        let cur = 0; const total = 7;
+        const deck = document.getElementById('deck');
+        const slides = document.querySelectorAll('.slide');
+        const prog = document.getElementById('progress');
+        const cnt = document.getElementById('counter');
+
+        function goTo(n) {
+            if (n < 0 || n >= total || document.body.classList.contains('scroll-mode')) return;
+            slides[cur].classList.remove('active');
+            cur = n;
+            slides[cur].classList.add('active');
+            deck.style.transform = `translateX(-${cur * 100}vw)`;
+            prog.style.width = ((cur + 1) / total * 100) + '%';
+            cnt.textContent = String(cur + 1).padStart(2, '0') + ' / 0' + total;
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === ' ') goTo(cur + 1);
+            else if (e.key === 'ArrowLeft') goTo(cur - 1);
+        });
+
+        let touchX = 0;
+        document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX });
+        document.addEventListener('touchend', e => { const d = e.changedTouches[0].clientX - touchX; if (Math.abs(d) > 50) { d < 0 ? goTo(cur + 1) : goTo(cur - 1) } });
+
+        function toggleMode() {
+            document.body.classList.toggle('scroll-mode');
+            const btn = document.querySelector('.toolbar button');
+            btn.textContent = document.body.classList.contains('scroll-mode') ? 'Slide Mode' : 'Scroll Mode';
+            if (!document.body.classList.contains('scroll-mode')) { goTo(cur) }
+            else { slides.forEach(s => s.classList.add('active')) }
+        }
+
+        /* ═══ FLOATING PARTICLES ═══ */
+        function initParticles(id, count = 20) {
+            const el = document.getElementById(id); if (!el) return;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                const s = Math.random() * 3 + 1;
+                Object.assign(p.style, {
+                    position: 'absolute', width: s + 'px', height: s + 'px',
+                    background: `rgba(74,222,128,${Math.random() * 0.3 + 0.05})`,
+                    borderRadius: '50%',
+                    left: Math.random() * 100 + '%', top: Math.random() * 100 + '%',
+                    animation: `float ${Math.random() * 8 + 6}s ease-in-out infinite`,
+                    animationDelay: Math.random() * 5 + 's'
+                });
+                el.appendChild(p);
+            }
+        }
+
+        // Float animation
+        const style = document.createElement('style');
+        style.textContent = `@keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:0.3}25%{transform:translateY(-20px) translateX(10px);opacity:0.6}50%{transform:translateY(-40px) translateX(-5px);opacity:0.2}75%{transform:translateY(-20px) translateX(15px);opacity:0.5}}`;
+        document.head.appendChild(style);
+
+        /* ═══ CONTRIBUTION GRAPH ═══ */
+        (function () {
+            const g = document.getElementById('flowGraph'); if (!g) return;
+            [0, 1, 2, 0, 3, 4, 3, 2, 1, 0, 0, 1, 3, 4, 4, 3, 2, 1, 0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 1, 2, 3, 2, 4, 3, 2].forEach(v => {
+                const d = document.createElement('div'); d.className = 'c';
+                d.style.backgroundColor = `rgba(74,222,128,${[0.05, 0.15, 0.3, 0.55, 0.85][v]})`;
+                g.appendChild(d);
+            });
+        })();
+
+        /* ═══ TREE CANVAS ═══ */
+        function initTree(id) {
+            const c = document.getElementById(id); if (!c) return;
+            const p = c.parentElement, ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 1;
+            const w = p.offsetWidth, h = p.offsetHeight;
+            c.width = w * dpr; c.height = h * dpr; c.style.width = w + 'px'; c.style.height = h + 'px';
+            ctx.scale(dpr, dpr); let f = 0;
+            !function draw() {
+                ctx.clearRect(0, 0, w, h);
+                const bx = w / 2, by = h - 60, n = 14, sp = (h - 140) / n;
+                ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 8; ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - n * sp); ctx.stroke();
+                ctx.setLineDash([]); ctx.shadowBlur = 0;
+                for (let i = 0; i < n; i++) {
+                    const y = by - i * sp, p = Math.sin(f * 0.02 + i * 0.5) * 0.2 + 0.8;
+                    ctx.fillStyle = `rgba(74,222,128,${p})`; ctx.beginPath(); ctx.arc(bx, y, 2.5, 0, Math.PI * 2); ctx.fill();
+                    if (i > 2 && i % 2 === 0) for (let b = 0; b < Math.min(i - 1, 3); b++) {
+                        const s = b % 2 === 0 ? 1 : -1, l = 20 + b * 8 + Math.sin(f * 0.015 + b) * 3;
+                        const ex = bx + Math.cos((Math.PI / 4 + b * 0.3) * s - Math.PI / 2) * l * s, ey = y + Math.sin((Math.PI / 4 + b * 0.3) * s - Math.PI / 2) * l * 0.45;
+                        ctx.strokeStyle = `rgba(74,222,128,${p * 0.4})`; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(bx, y); ctx.lineTo(ex, ey); ctx.stroke();
+                        ctx.fillStyle = `rgba(74,222,128,${p * 0.3})`; ctx.beginPath(); ctx.arc(ex, ey, 1.5, 0, Math.PI * 2); ctx.fill()
+                    }
+                }
+                const ty = by - n * sp, gr = Math.sin(f * 0.03) * 6 + 10; ctx.shadowColor = '#4ade80'; ctx.shadowBlur = gr;
+                ctx.fillStyle = `rgba(74,222,128,${0.25 + Math.sin(f * 0.03) * 0.1})`; ctx.beginPath(); ctx.arc(bx, ty - 10, 5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'rgba(74,222,128,0.1)'; ctx.lineWidth = 0.5;
+                for (let r = 0; r < 5; r++) { const a = (Math.PI / 6) * (r - 2), rl = 20 + r * 6; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(a + Math.PI / 2) * rl, by + Math.sin(a + Math.PI / 2) * rl * 0.3 + 6); ctx.stroke() }
+                f++; requestAnimationFrame(draw)
+            }()
+        }
+
+        /* ═══ MINI CANVASES ═══ */
+        function initMini(id, drawFn) {
+            const c = document.getElementById(id); if (!c) return;
+            const p = c.parentElement, ctx = c.getContext('2d'), dpr = window.devicePixelRatio || 1;
+            const w = p.offsetWidth - 24, h = p.offsetHeight - 24;
+            c.width = w * dpr; c.height = h * dpr; c.style.width = w + 'px'; c.style.height = h + 'px';
+            ctx.scale(dpr, dpr); let f = 0;
+            !function loop() { ctx.clearRect(0, 0, w, h); drawFn(ctx, w, h, f); f++; requestAnimationFrame(loop) }()
+        }
+
+        function drawValley(ctx, w, h) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(0, 0, w * 0.35, h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.beginPath(); ctx.moveTo(w * 0.35, 0); ctx.lineTo(w * 0.35, h); ctx.stroke();
+            ['NEON DREAMS', 'ECO-LODGE', 'SOUNDSCAPES'].forEach((l, i) => {
+                const y = 16 + i * 30;
+                if (i === 0) { ctx.fillStyle = 'rgba(74,222,128,0.08)'; ctx.fillRect(6, y - 2, w * 0.35 - 12, 22) }
+                ctx.fillStyle = i === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)'; ctx.font = '7px Inter,sans-serif'; ctx.fillText(l, 12, y + 10)
+            });
+            const mx = w * 0.35 + 12; ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = 'bold 9px Space Grotesk,sans-serif'; ctx.fillText('NEON DREAMS', mx, 24);
+            const cols = ['rgba(74,222,128,0.1)', 'rgba(245,158,11,0.1)', 'rgba(56,189,248,0.1)'];
+            for (let r = 0; r < 2; r++)for (let c = 0; c < 3; c++) { const bw = (w - mx - 20) / 3; ctx.fillStyle = cols[c]; ctx.fillRect(mx + c * (bw + 3), 40 + r * 44, bw, 38); ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.strokeRect(mx + c * (bw + 3), 40 + r * 44, bw, 38) }
+        }
+
+        function drawLock(ctx, w, h, f) {
+            const p = Math.sin(f * 0.04) * 0.15 + 0.85; ctx.textAlign = 'center';
+            ctx.fillStyle = `rgba(251,146,60,${p * 0.8})`; ctx.font = '16px sans-serif'; ctx.fillText('🔒', w / 2, 24);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = 'bold 9px Space Grotesk,sans-serif'; ctx.fillText('DAILY LOCOMMIT', w / 2, 42);
+            ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.font = '7px Inter,sans-serif'; ctx.fillText('Share to unlock', w / 2, 54);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.setLineDash([3, 3]); ctx.strokeRect(w * 0.15, 64, w * 0.7, 40); ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(74,222,128,0.15)'; ctx.fillRect(w * 0.15, 114, w * 0.7, 20);
+            ctx.fillStyle = 'rgba(74,222,128,0.8)'; ctx.font = 'bold 7px Inter,sans-serif'; ctx.fillText('SUBMIT & UNLOCK 🌿', w / 2, 127);
+            const gx = w * 0.15; for (let i = 0; i < 28; i++) {
+                const v = [0, 1, 2, 0, 3, 4, 3, 2, 1, 0, 0, 1, 3, 4, 4, 3, 2, 1, 0, 1, 2, 3, 4, 4, 3, 2, 1, 0][i];
+                ctx.fillStyle = `rgba(74,222,128,${[0.05, 0.15, 0.3, 0.5, 0.8][v]})`; ctx.fillRect(gx + i * (w * 0.7 / 28), h - 16, (w * 0.7 / 28) - 1, 7)
+            }
+            ctx.textAlign = 'start';
+        }
+
+        function drawForest(ctx, w, h, f) {
+            const ts = 14; for (let tx = 0; tx < w / ts; tx++)for (let ty = 0; ty < h / ts; ty++) { ctx.fillStyle = (tx + ty) % 2 === 0 ? 'rgba(19,26,19,0.5)' : 'rgba(26,15,8,0.3)'; ctx.fillRect(tx * ts, ty * ts, ts, ts) }
+            const trees = []; for (let i = 0; i < 8; i++) {
+                const a = i * (Math.PI * (3 - Math.sqrt(5))), r = 25 * Math.sqrt(i);
+                trees.push({ x: w / 2 + Math.cos(a) * r, y: h / 2 + Math.sin(a) * r * 0.5, ht: Math.floor(Math.random() * 5) + 3, hue: (120 + i * 10) % 160 })
+            }
+            trees.forEach((t, i) => {
+                const p = Math.sin(f * 0.02 + i) * 0.12 + 0.88, col = `hsla(${t.hue},70%,55%,${p * 0.6})`;
+                ctx.strokeStyle = col; ctx.lineWidth = 0.8; ctx.setLineDash([2, 2]); const by = t.y + 16;
+                ctx.beginPath(); ctx.moveTo(t.x, by); ctx.lineTo(t.x, by - t.ht * 10); ctx.stroke(); ctx.setLineDash([]);
+                for (let n = 0; n < t.ht; n++) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(t.x, by - n * 10, 1.3, 0, Math.PI * 2); ctx.fill() }
+            })
+        }
+
+        /* ═══ PDF EXPORT ═══ */
+        function exportPDF() {
+            const tb = document.getElementById('toolbar'); tb.style.display = 'none';
+            const w = document.createElement('div'); w.style.width = '1280px';
+            slides.forEach(s => {
+                const cl = s.cloneNode(true); cl.style.width = '1280px'; cl.style.height = '720px'; cl.style.pageBreakAfter = 'always';
+                cl.querySelectorAll('canvas').forEach(c => c.style.display = 'none'); w.appendChild(cl)
+            });
+            html2pdf().set({
+                margin: 0, filename: 'trybe_capstone_defense.pdf', image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#050505' }, jsPDF: { unit: 'px', format: [1280, 720], orientation: 'landscape' }
+            }).from(w).save().then(() => { tb.style.display = 'flex' });
+        }
+
+        /* ═══ INIT ═══ */
+        window.addEventListener('DOMContentLoaded', () => {
+            initTree('heroC'); initTree('closeC');
+            initMini('valleyC', drawValley); initMini('lockC', drawLock); initMini('forestC', drawForest);
+            initParticles('p1', 25); initParticles('p2', 15); initParticles('p7', 25);
+            goTo(0);
+        });
+    </script>
+</body>
+
+</html>
