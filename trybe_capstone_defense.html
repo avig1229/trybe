@@ -281,7 +281,7 @@
         }
 
         .tile-label {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.15em;
             color: var(--green);
@@ -289,12 +289,12 @@
         }
 
         .tile h3 {
-            font-size: clamp(16px, 1.6vw, 22px);
+            font-size: clamp(20px, 2vw, 26px);
             letter-spacing: -0.5px
         }
 
         .tile p {
-            font-size: clamp(11px, 1.1vw, 14px);
+            font-size: clamp(13px, 1.3vw, 16px);
             line-height: 1.6;
             color: var(--t2)
         }
@@ -343,8 +343,9 @@
         }
 
         .p-desc {
-            font-size: 11px;
-            color: var(--t3)
+            font-size: 14px;
+            color: var(--t3);
+            line-height: 1.4
         }
 
         /* Tech grid */
@@ -365,7 +366,7 @@
         }
 
         .tech-cell .lb {
-            font-size: 8px;
+            font-size: 10px;
             letter-spacing: 0.15em;
             text-transform: uppercase;
             color: var(--t4)
@@ -379,7 +380,7 @@
         }
 
         .tech-cell .dt {
-            font-size: 10px;
+            font-size: 12px;
             color: var(--t3);
             line-height: 1.5
         }
@@ -472,12 +473,12 @@
 
         .achv li {
             background: var(--bg);
-            padding: 10px 16px;
-            font-size: 11px;
+            padding: 12px 20px;
+            font-size: 14px;
             color: var(--t2);
             display: flex;
             align-items: center;
-            gap: 8px
+            gap: 10px
         }
 
         .achv .ck {
@@ -498,10 +499,10 @@
 
         .analysis-col {
             background: var(--bg);
-            padding: clamp(20px, 2.5vw, 30px);
+            padding: clamp(24px, 3vw, 36px);
             display: flex;
             flex-direction: column;
-            gap: 16px
+            gap: 20px
         }
 
         .a-item {
@@ -511,29 +512,29 @@
         }
 
         .a-item .tg {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border: 1px solid var(--bd);
             color: var(--t3);
             flex-shrink: 0;
-            margin-top: 2px
+            margin-top: 3px
         }
 
         .a-item h4 {
             font-family: var(--ff);
-            font-size: clamp(12px, 1.2vw, 15px);
+            font-size: clamp(16px, 1.6vw, 20px);
             font-weight: 700;
             color: var(--t1);
             text-transform: uppercase;
             letter-spacing: -0.3px;
-            margin-bottom: 3px
+            margin-bottom: 4px
         }
 
         .a-item p {
-            font-size: 11px;
+            font-size: 14px;
             line-height: 1.5;
             color: var(--t3)
         }
@@ -559,16 +560,16 @@
 
         .future-cell h5 {
             font-family: var(--ff);
-            font-size: 10px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--t1);
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 3px
+            margin-bottom: 4px
         }
 
         .future-cell p {
-            font-size: 9px;
+            font-size: 12px;
             color: var(--t4);
             line-height: 1.4
         }
@@ -727,7 +728,7 @@
                     <h1 class="anim d1">TRYBE</h1>
                     <p class="tagline anim d2">A process-first platform for indie creators to structure their chaos,
                         build in public, and find their people.</p>
-                    <div class="meta-line anim d3">Abihnash · Minerva University · trybe-six.vercel.app</div>
+                    <div class="meta-line anim d3">Min-Kuan (Avi), Gu · Minerva University · trybe-six.vercel.app</div>
                 </div>
             </div>
             <div class="slide-foot"><span>Trybe</span><span>01 / 07</span></div>
@@ -902,6 +903,13 @@
                             <div class="demo-panel-bd"><canvas id="forestC"></canvas></div>
                         </div>
                     </div>
+                    <a href="https://www.loom.com/share/c173bc68ebf240fe9f754f4f7edc42d2" target="_blank" rel="noopener"
+                        style="display:flex;align-items:center;gap:12px;padding:12px 20px;border:1px solid var(--g15);background:var(--g08);text-decoration:none;transition:background 0.2s">
+                        <span style="font-size:18px">▶</span>
+                        <span style="font-size:14px;color:var(--green);font-weight:600;letter-spacing:0.05em">Watch Full
+                            Demo Walkthrough</span>
+                        <span style="font-size:11px;color:var(--t3);margin-left:auto">loom.com</span>
+                    </a>
                     <ul class="achv">
                         <li><span class="ck">✓</span>Full auth (Email, Magic Links, Google OAuth)</li>
                         <li><span class="ck">✓</span>Hierarchical projects (Project → Channel → Block)</li>
@@ -920,48 +928,54 @@
             <div class="slide-inner">
                 <span class="slide-num anim">06 / 07</span>
                 <h2 class="slide-title anim d1">Analysis</h2>
-                <span class="slide-sub anim d1">Strengths, limitations & future</span>
+                <span class="slide-sub anim d1">What works, what's next</span>
                 <div class="content anim d2" style="gap:12px;border:none;padding-top:12px">
                     <div class="analysis-grid">
                         <div class="analysis-col">
-                            <span class="tile-label" style="margin-bottom:2px">Strengths</span>
-                            <div class="a-item"><span class="tg">System</span>
+                            <span class="tile-label" style="margin-bottom:2px">What Works for Users</span>
+                            <div class="a-item"><span class="tg">Habits</span>
                                 <div>
-                                    <h4>Behavioral Forcing Function</h4>
-                                    <p>LoCommit structurally requires contribution — not a passive tool</p>
+                                    <h4>Builds Real Consistency</h4>
+                                    <p>The daily lock creates a rhythm — users show up every day because the app gently
+                                        holds them accountable</p>
                                 </div>
                             </div>
-                            <div class="a-item"><span class="tg">Security</span>
+                            <div class="a-item"><span class="tg">Clarity</span>
                                 <div>
-                                    <h4>Architecture-Level Privacy</h4>
-                                    <p>RLS at the DB engine; security is a guarantee, not afterthought</p>
+                                    <h4>One Place for Everything</h4>
+                                    <p>Moodboards, drafts, videos, and links organized in one dashboard — no more
+                                        juggling five different apps</p>
                                 </div>
                             </div>
-                            <div class="a-item"><span class="tg">Search</span>
+                            <div class="a-item"><span class="tg">Growth</span>
                                 <div>
-                                    <h4>Native Full-Text Search</h4>
-                                    <p>pg_trgm eliminates external service dependencies</p>
+                                    <h4>Visible Progress</h4>
+                                    <p>The growing tree and heatmap give creators tangible proof of their effort —
+                                        motivation you can see</p>
                                 </div>
                             </div>
                         </div>
                         <div class="analysis-col">
-                            <span class="tile-label" style="margin-bottom:2px">Limitations</span>
-                            <div class="a-item"><span class="tg">TZ</span>
+                            <span class="tile-label" style="margin-bottom:2px">What Needs Improvement</span>
+                            <div class="a-item"><span class="tg">Time</span>
                                 <div>
-                                    <h4>Fixed Global Reset</h4>
-                                    <p>9 AM UTC+8; per-user timezone is the planned next step</p>
+                                    <h4>One Reset for Everyone</h4>
+                                    <p>The daily reset is fixed at 9 AM Taiwan time — not ideal for creators in other
+                                        timezones</p>
                                 </div>
                             </div>
-                            <div class="a-item"><span class="tg">Scope</span>
+                            <div class="a-item"><span class="tg">Social</span>
                                 <div>
-                                    <h4>Tribes Not Shipped</h4>
-                                    <p>Schema defined; UX constrained by solo developer timeline</p>
+                                    <h4>No Community Spaces Yet</h4>
+                                    <p>Users can see each other's trees but can't form groups or tribes — the social
+                                        layer is still thin</p>
                                 </div>
                             </div>
-                            <div class="a-item"><span class="tg">RT</span>
+                            <div class="a-item"><span class="tg">Live</span>
                                 <div>
-                                    <h4>Optimistic UI Only</h4>
-                                    <p>No WebSockets; pragmatic trade-off for robustness</p>
+                                    <h4>No Real-Time Feedback</h4>
+                                    <p>Updates require a page refresh to appear — no live notifications or instant
+                                        collaboration yet</p>
                                 </div>
                             </div>
                         </div>
@@ -970,22 +984,22 @@
                         <div class="future-cell">
                             <div class="ic">👥</div>
                             <h5>Tribes</h5>
-                            <p>Creator-led micro-communities</p>
+                            <p>Join niche creative communities</p>
                         </div>
                         <div class="future-cell">
                             <div class="ic">🤖</div>
                             <h5>AI Portfolio</h5>
-                            <p>LLM case studies from daily logs</p>
+                            <p>Auto-generate case studies from your daily logs</p>
                         </div>
                         <div class="future-cell">
                             <div class="ic">🌍</div>
-                            <h5>Per-User TZ</h5>
-                            <p>Personalized daily reset</p>
+                            <h5>Your Timezone</h5>
+                            <p>Daily reset based on where you are</p>
                         </div>
                         <div class="future-cell">
                             <div class="ic">📊</div>
-                            <h5>Analytics</h5>
-                            <p>Creator engagement dashboard</p>
+                            <h5>Creator Stats</h5>
+                            <p>See how your audience engages with your work</p>
                         </div>
                     </div>
                 </div>
