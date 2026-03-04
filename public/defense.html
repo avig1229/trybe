@@ -45,7 +45,7 @@
             display: flex;
             transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
             height: 100vh;
-            width: 700vw
+            width: 800vw
         }
 
         .slide {
@@ -713,7 +713,7 @@
 <body>
 
     <div class="progress" id="progress"></div>
-    <div class="counter" id="counter">01 / 07</div>
+    <div class="counter" id="counter">01 / 08</div>
     <div class="nav-hint">← → Arrow Keys to Navigate</div>
 
     <div class="deck" id="deck">
@@ -731,14 +731,14 @@
                     <div class="meta-line anim d3">Min-Kuan (Avi), Gu · Minerva University · trybe-six.vercel.app</div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>01 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>01 / 08</span></div>
         </div>
 
         <!-- SLIDE 2: PROBLEM -->
         <div class="slide" id="s2">
             <div class="particles" id="p2"></div>
             <div class="slide-inner">
-                <span class="slide-num anim">02 / 07</span>
+                <span class="slide-num anim">02 / 08</span>
                 <h2 class="slide-title anim d1">The Problem</h2>
                 <span class="slide-sub anim d1">Why current tools fail creators</span>
                 <div class="content anim d2" style="border:none;padding:0">
@@ -766,13 +766,13 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>02 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>02 / 08</span></div>
         </div>
 
         <!-- SLIDE 3: PILLARS -->
         <div class="slide" id="s3">
             <div class="slide-inner">
-                <span class="slide-num anim">03 / 07</span>
+                <span class="slide-num anim">03 / 08</span>
                 <h2 class="slide-title anim d1">Architecture</h2>
                 <span class="slide-sub anim d1">Three interconnected pillars</span>
                 <div class="content anim d2"
@@ -825,13 +825,13 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>03 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>03 / 08</span></div>
         </div>
 
         <!-- SLIDE 4: TECH -->
         <div class="slide" id="s4">
             <div class="slide-inner">
-                <span class="slide-num anim">04 / 07</span>
+                <span class="slide-num anim">04 / 08</span>
                 <h2 class="slide-title anim d1">Tech Stack</h2>
                 <span class="slide-sub anim d1">Architecture & key decisions</span>
                 <div class="content anim d2" style="gap:16px;border:none;padding-top:12px">
@@ -873,13 +873,13 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>04 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>04 / 08</span></div>
         </div>
 
         <!-- SLIDE 5: OUTCOMES -->
         <div class="slide" id="s5">
             <div class="slide-inner">
-                <span class="slide-num anim">05 / 07</span>
+                <span class="slide-num anim">05 / 08</span>
                 <h2 class="slide-title anim d1">Key Outcomes</h2>
                 <span class="slide-sub anim d1">What was built & delivered</span>
                 <div class="content anim d2" style="gap:12px;border:none;padding-top:12px">
@@ -920,13 +920,76 @@
                     </ul>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>05 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>05 / 08</span></div>
         </div>
 
-        <!-- SLIDE 6: ANALYSIS -->
+        <!-- SLIDE 6: FOREST — BEHAVIORAL DESIGN -->
         <div class="slide" id="s6">
             <div class="slide-inner">
-                <span class="slide-num anim">06 / 07</span>
+                <span class="slide-num anim">06 / 08</span>
+                <h2 class="slide-title anim d1">The Forest</h2>
+                <span class="slide-sub anim d1">Behavioral design · Carrots & sticks</span>
+                <div class="content anim d2"
+                    style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bd);border:1px solid var(--bd);border-top:none;padding:0">
+                    <div
+                        style="background:var(--bg);padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:20px">
+                        <span class="tile-label">🥕 Carrots — Rewards for Showing Up</span>
+                        <div class="a-item"><span class="tg">Growth</span>
+                            <div>
+                                <h4>Your Tree Grows Taller</h4>
+                                <p>Every daily commit adds a new node and branch — consistent creators have the tallest,
+                                    most complex trees in the forest</p>
+                            </div>
+                        </div>
+                        <div class="a-item"><span class="tg">Streak</span>
+                            <div>
+                                <h4>Contribution Heatmap</h4>
+                                <p>A GitHub-style graph tracks daily activity with 0-to-4 intensity — long green streaks
+                                    become a source of pride</p>
+                            </div>
+                        </div>
+                        <div class="a-item"><span class="tg">Social</span>
+                            <div>
+                                <h4>Visible to the Community</h4>
+                                <p>Your growing tree is public in the Forest — others can see your consistency and
+                                    engage with your project</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="background:var(--bg);padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:20px">
+                        <span class="tile-label">🪵 Sticks — Consequences of Inaction</span>
+                        <div class="a-item"><span class="tg">Lock</span>
+                            <div>
+                                <h4>Social Features Locked</h4>
+                                <p>Until you post your daily update, the community feed and Forest are behind a soft
+                                    overlay — contribute first, then consume</p>
+                            </div>
+                        </div>
+                        <div class="a-item"><span class="tg">Wither</span>
+                            <div>
+                                <h4>Your Tree Withers</h4>
+                                <p>Miss enough days and your tree visually shrinks and fades — a gentle but public
+                                    signal that momentum has stalled</p>
+                            </div>
+                        </div>
+                        <div class="a-item"><span class="tg">Reset</span>
+                            <div>
+                                <h4>Streak Breaks</h4>
+                                <p>The heatmap shows gaps honestly — no way to fake consistency, which makes the streaks
+                                    more meaningful</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-foot"><span>Trybe</span><span>06 / 08</span></div>
+        </div>
+
+        <!-- SLIDE 7: ANALYSIS -->
+        <div class="slide" id="s7">
+            <div class="slide-inner">
+                <span class="slide-num anim">07 / 08</span>
                 <h2 class="slide-title anim d1">Analysis</h2>
                 <span class="slide-sub anim d1">What works, what's next</span>
                 <div class="content anim d2" style="gap:12px;border:none;padding-top:12px">
@@ -1004,11 +1067,11 @@
                     </div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>06 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>07 / 08</span></div>
         </div>
 
-        <!-- SLIDE 7: CLOSING -->
-        <div class="slide" id="s7">
+        <!-- SLIDE 8: CLOSING -->
+        <div class="slide" id="s8">
             <div class="tree-bg"><canvas id="closeC"></canvas></div>
             <div class="particles" id="p7"></div>
             <div class="slide-inner">
@@ -1024,20 +1087,16 @@
                         · Questions?</div>
                 </div>
             </div>
-            <div class="slide-foot"><span>Trybe</span><span>07 / 07</span></div>
+            <div class="slide-foot"><span>Trybe</span><span>08 / 08</span></div>
         </div>
 
     </div>
 
-    <div class="toolbar" id="toolbar">
-        <button onclick="toggleMode()">Scroll Mode</button>
-        <button onclick="window.print()">Print PDF</button>
-        <button onclick="exportPDF()">Export PDF</button>
-    </div>
+
 
     <script>
         /* ═══ SLIDE NAVIGATION ═══ */
-        let cur = 0; const total = 7;
+        let cur = 0; const total = 8;
         const deck = document.getElementById('deck');
         const slides = document.querySelectorAll('.slide');
         const prog = document.getElementById('progress');
