@@ -18,7 +18,7 @@ export default function HomePage() {
           router.push('/valley')
         }
       } else {
-        router.push('/auth/login')
+        router.push('/landing')
       }
     }
   }, [user, profile, loading, router])
