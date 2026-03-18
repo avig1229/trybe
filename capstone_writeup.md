@@ -1,72 +1,61 @@
-# Trybe — Capstone Project Technical Documentation
+# Trybe — Capstone Project
 
-## 1. Introduction
+## 1. What Trybe Is
 
-### 1.1 Problem Statement
+Trybe is a web application for independent creators who work on personal projects. It combines a project workspace, a daily check-in system, and a community visualization into one tool.
 
-Independent creators face three compounding challenges that existing tools fail to address as a unified system:
+The application solves a practical problem: creators typically use several disconnected tools (Notion for planning, Pinterest for references, Figma for design, Discord for community). Trybe puts all of these functions in one place and adds a daily accountability system that doesn't exist in any of those tools.
 
-1. **Tool Fragmentation.** A typical creator workflow spans Pinterest (visual references), Notion (planning), Figma (design), and Slack (communication). Each context switch costs an estimated 10–15 minutes of refocusing time, destroying creative momentum.
+The application has three parts:
 
-2. **Creative Isolation.** Solo creators lack the structural accountability that teams naturally provide — daily standups, code reviews, and studio critiques. Without a forcing function, consistency degrades.
+| Part | What it does |
+|------|-------------|
+| **Project Valley** | A private workspace where users organize projects into folders (Channels) and individual items (Blocks — text, images, videos, links, files) |
+| **LoCommit** | A daily check-in that locks social features until the user posts a progress update. The lock resets every day at 9:00 AM Taiwan time |
+| **The Forest** | A shared canvas where every project is drawn as a tree. Trees grow taller as users post more updates. Inactive projects visibly wither |
 
-3. **Process Invisibility.** Portfolio platforms like Behance and Dribbble only surface polished final products. The iterative process — where learning and growth actually occur — remains hidden, creating survivorship bias in creative communities.
-
-### 1.2 Project Goals
-
-Trybe was built to unify private productivity and public creative sharing into a single platform with three interconnected modules:
-
-| Module | Purpose | Core Mechanic |
-|--------|---------|---------------|
-| **Project Valley** | Structure creative work | Hierarchical dashboard: Project → Channel → Block |
-| **LoCommit Engine** | Enforce daily accountability | "Soft lock" — contribute before you consume |
-| **The Forest** | Visualize community consistency | Spatial tree garden — each project is a living tree |
-
-### 1.3 Target Audience
-
-Indie creators (designers, filmmakers, developers, writers) working on personal projects who want structured accountability and community connection without the performative pressure of traditional social media.
+The app is live at [trybe-six.vercel.app](https://trybe-six.vercel.app).
 
 ---
 
 ## 2. Software Architecture
 
-### 2.1 Technology Stack
+### 2.1 Stack
 
-| Layer | Technology | Rationale |
-|-------|-----------|-----------|
-| Frontend | Next.js 15 (App Router) | Hybrid SSR/CSR — server rendering for SEO, client components for interactive features |
-| UI Framework | Tailwind CSS + Radix UI | Glassmorphism design system with accessible primitives (keyboard nav, screen readers) |
-| Backend | Supabase | Backend-as-a-Service — Auth, Database, Storage, Edge Functions in one platform |
-| Database | PostgreSQL | Relational integrity for hierarchical data (Project → Channel → Block), advanced querying |
-| Security | Row Level Security (RLS) | 30+ policies enforced at the database engine level |
-| Search | pg_trgm + GIN indexes | Fuzzy full-text search without external services (no Algolia/Elasticsearch) |
-| Deployment | Vercel | Global CDN, Edge deployment, automatic CI/CD from GitHub |
-| Storage | Supabase Storage (S3-compatible) | 4 buckets for user uploads with client-side video validation |
+| Layer | Technology | Why this choice |
+|-------|-----------|----------------|
+| Frontend | Next.js 15 (App Router) | Needed both server-rendered public pages and interactive dashboards in one codebase |
+| UI | Tailwind CSS + Radix UI | Radix provides accessible UI primitives (keyboard navigation, screen readers); Tailwind handles styling |
+| Backend | Supabase | Provides auth, database, and file storage as a single service. As a solo developer, this eliminated the need to configure and connect separate AWS services |
+| Database | PostgreSQL | The data model is hierarchical (Project → Channel → Block). PostgreSQL enforces this with foreign keys and cascade deletes — orphaned data is impossible |
+| Security | Row Level Security (RLS) | 30+ database-level policies control who can read and write what. Security is enforced by the database engine, not by application code |
+| Search | pg_trgm + GIN indexes | Fuzzy full-text search handled entirely by PostgreSQL. No external search service needed |
+| Deployment | Vercel | Automatic deployment from GitHub pushes. Static assets served from a CDN |
+| File Storage | Supabase Storage | S3-compatible object storage. Four buckets for different upload categories |
 
 ### 2.2 Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph Client["Browser (Client)"]
+    subgraph Client["Browser"]
         RSC["React Server Components"]
         CC["Client Components<br/>(Canvas, Editors)"]
         RQ["React Query<br/>(Client State)"]
     end
 
-    subgraph Vercel["Vercel Edge Network"]
-        CDN["Global CDN<br/>(Static Assets)"]
+    subgraph Vercel["Vercel"]
+        CDN["CDN<br/>(Static Assets)"]
         NX["Next.js App Router<br/>(SSR + API Routes)"]
         SA["Server Actions<br/>(Data Mutations)"]
     end
 
-    subgraph Supabase["Supabase Platform"]
-        AUTH["Auth Service<br/>(Email, OAuth, Magic Links)"]
-        DB["PostgreSQL Database"]
-        STORE["Object Storage<br/>(S3-compatible, 4 Buckets)"]
-        EDGE["Edge Functions"]
+    subgraph Supabase["Supabase"]
+        AUTH["Auth<br/>(Email, OAuth, Magic Links)"]
+        DB["PostgreSQL"]
+        STORE["Object Storage<br/>(4 Buckets)"]
     end
 
-    subgraph Database["PostgreSQL Engine"]
+    subgraph Database["PostgreSQL Internals"]
         RLS["Row Level Security<br/>(30+ Policies)"]
         IDX["Indexes<br/>(B-Tree + GIN)"]
         TRG["Triggers<br/>(8 Auto-Update)"]
@@ -83,100 +72,163 @@ graph TB
     DB --> IDX
     DB --> TRG
     DB --> FN
-
-    style Client fill:#1a1a2e,stroke:#4ade80,color:#fff
-    style Vercel fill:#1a1a2e,stroke:#4ade80,color:#fff
-    style Supabase fill:#1a1a2e,stroke:#4ade80,color:#fff
-    style Database fill:#1a1a2e,stroke:#4ade80,color:#fff
 ```
 
-### 2.3 Key Architectural Decisions
+### 2.3 Why These Choices
 
-**Why Next.js 15 (App Router)?**
-Trybe requires both SEO-friendly public pages (creator profiles, the Forest) and highly interactive private dashboards (Project Valley, Block Editor). The App Router's hybrid model allows React Server Components for data-heavy pages and Client Components for Canvas-based visualizations — in the same codebase without a separate API layer.
+**Next.js 15 (App Router):** The app needs server-rendered pages for public profiles (so they load fast and are indexable) and client-side components for the Forest canvas and drag-and-drop editors. The App Router lets both coexist in the same project without a separate API server.
 
-**Why Supabase over custom backend?**
-As a solo developer, infrastructure overhead directly competes with feature development time. Supabase provides Auth, Database, Storage, and Edge Functions as a cohesive platform, eliminating the need to stitch together separate AWS services. The tight PostgreSQL integration also enables Row Level Security, which would require significant custom middleware in a traditional Express/Node setup.
+**Supabase instead of a custom backend:** Building authentication, file uploads, and database management from scratch would have consumed most of the development time. Supabase bundles all three. The tradeoff is vendor lock-in, but for a capstone project the speed gain was worth it.
 
-**Why PostgreSQL over NoSQL?**
-Trybe's data model is strictly hierarchical: `Project → Channel → Block`. This structure requires relational integrity — orphaned blocks or broken parent references must be impossible. PostgreSQL enforces this through foreign key constraints with `ON DELETE CASCADE`. Additionally, complex queries like "find all video blocks in public projects by users who posted a daily update today" are efficient in SQL but computationally expensive in document stores.
+**PostgreSQL instead of a document database:** Trybe's data is relational — a Block belongs to a Channel, which belongs to a Project, which belongs to a User. This structure maps naturally to SQL tables with foreign keys. A document store like MongoDB would require manual enforcement of these relationships in application code, which is error-prone.
 
 ---
 
-## 3. Application Page Flow
+## 3. How the Application Works — User Walkthroughs
 
-### 3.1 Route Map
+### 3.1 Walkthrough: First-Time User
 
-The application consists of 12 routes organized into four functional groups:
+A new user visits the app and sees the landing page. They sign up using email, Google OAuth, or a magic link. After authentication, they go through a short onboarding flow:
 
-| Group | Route | Component | Purpose |
-|-------|-------|-----------|---------|
-| **Public** | `/` | `page.tsx` | Root redirect |
-| | `/landing` | `landing/page.tsx` | Marketing landing page with animated hero tree |
-| **Auth** | `/auth/login` | `auth/login/page.tsx` | Email, Magic Link, and Google OAuth login |
-| | `/auth/signup` | `auth/signup/page.tsx` | Account creation |
-| **Onboarding** | `/onboarding` | `onboarding/page.tsx` | Welcome flow entry |
-| | `/onboarding/guide` | `onboarding/guide/page.tsx` | Platform tutorial |
-| | `/onboarding/project` | `onboarding/project/page.tsx` | First project creation |
-| **Core App** | `/valley` | `valley/page.tsx` | Project Valley dashboard (all projects) |
-| | `/valley/[projectId]` | `valley/[projectId]/page.tsx` | Single project detail view |
-| | `/projects/[projectId]` | `projects/[projectId]/page.tsx` | Public project view |
-| | `/u/[username]` | `u/[username]/page.tsx` | Public creator profile |
-| | `/pulse-demo` | `pulse-demo/page.tsx` | Collective Pulse / Forest view |
+1. **Welcome screen** (`/onboarding`) — explains the three pillars of the app
+2. **Guide** (`/onboarding/guide`) — walks through the Valley, LoCommit, and Forest
+3. **First project creation** (`/onboarding/project`) — the user gives their project a name, description, and status (Planning, Active, Paused, or Completed)
 
-### 3.2 Navigation Flow Diagram
+After onboarding, they land in Project Valley — their private dashboard.
+
+### 3.2 Walkthrough: Creating and Organizing a Project
+
+Inside Valley, the user sees all their projects listed in a sidebar. Selecting a project opens a detail view with three tabs:
+
+**Tab 1 — Moodboard / Overview:**
+Uploaded images are automatically arranged in a masonry grid (a visual moodboard). Video updates scroll horizontally in a "Reel" format. This gives the user a visual summary of their project at a glance.
+
+**Tab 2 — Resources:**
+This is a file-manager-style interface. The user creates Channels (folders) inside their project — for example, "Inspiration," "Drafts," and "Final Assets." Inside each Channel, they add Blocks. A Block is a single piece of content:
+
+| Block Type | What it stores |
+|-----------|---------------|
+| Text | Written notes, briefs, or journal entries |
+| Image | Photos, screenshots, reference images |
+| Video | Progress recordings (validated: max 30 seconds, vertical orientation) |
+| Link | External URLs (Figma files, articles, etc.) |
+| Audio | Sound files, voiceover recordings |
+| File | Any other document |
+
+Each Block stores its metadata in a flexible JSONB column — for example, a video Block records `{ duration: 28, orientation: "vertical", width: 1080, height: 1920 }`.
+
+**Tab 3 — Progress:**
+A chronological timeline of all daily updates posted about this project. This serves as a log of what the user worked on each day.
+
+### 3.3 Walkthrough: The Daily LoCommit
+
+When the user tries to visit the community feed or Forest, the app checks whether they've posted a daily update since the most recent 9:00 AM Taiwan time (UTC+8) reset.
+
+If they haven't, a full-screen overlay appears — the DailyCheckIn component. They cannot dismiss it. To unlock social features, they must:
+
+1. Upload a short video or image of their progress
+2. Write a caption describing what they worked on
+3. Click "Submit & Unlock"
+
+After submitting, the overlay clears and they can browse the Forest and community feed for the rest of the day. The next morning at 9 AM, the lock resets.
+
+The actual check is a single database query:
+
+```typescript
+// src/lib/daily-lock.ts
+const { data } = await supabase
+    .from('posts')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', 'daily_update')
+    .gt('created_at', lastResetUTC.toISOString())
+    .limit(1)
+
+return { isLocked: !(data && data.length > 0) }
+```
+
+### 3.4 Walkthrough: The Forest
+
+After posting their daily update, the user can access The Forest — a shared canvas where every public project is represented as a tree.
+
+How the trees work:
+- **Position:** Trees are arranged using Fermat's Spiral (`θ = n × golden_angle, r = c × √n`), which distributes them evenly across the canvas without overlap
+- **Height:** Each daily commit adds a node to the tree's trunk. A user who has posted 30 updates has a tree that is 30 nodes tall
+- **Branches:** Engagement from other users (comments, likes) grows visible branches off the trunk
+- **Withering:** If a user stops posting for more than 48 hours, their tree fades to grayscale and shrinks — a visual signal that the project is inactive
+
+Clicking on a tree navigates to that creator's public profile, where you can see their public projects and contribution heatmap.
+
+### 3.5 Contribution Heatmap
+
+Each user has a GitHub-style contribution graph. It shows one cell per day, colored by activity level:
+
+| Level | Posts that day | Appearance |
+|-------|--------------|------------|
+| 0 | None | Nearly transparent |
+| 1 | 1 post | Light green |
+| 2 | 2 posts | Medium green |
+| 3 | 3 posts | Strong green |
+| 4 | 4+ posts | Full intensity |
+
+This is computed at read time from the `posts` table — there's no separate counter to maintain or keep in sync.
+
+---
+
+## 4. Application Routes
+
+The app has 12 routes:
+
+| Route | What the user sees |
+|-------|--------------------|
+| `/` | Redirects: authenticated users go to Valley, others go to landing page |
+| `/landing` | Public marketing page with animated tree demonstration |
+| `/auth/login` | Login form (email/password, Google OAuth, magic link) |
+| `/auth/signup` | Account creation |
+| `/onboarding` | Welcome screen |
+| `/onboarding/guide` | Platform tutorial |
+| `/onboarding/project` | First project setup |
+| `/valley` | Project dashboard — lists all user's projects |
+| `/valley/[projectId]` | Single project detail view (Moodboard, Resources, Progress tabs) |
+| `/projects/[projectId]` | Public view of a project (read-only, for visitors) |
+| `/u/[username]` | Public creator profile (bio, public projects, contribution graph) |
+| `/pulse-demo` | Community feed and Forest visualization |
+
+### Navigation Flow
 
 ```mermaid
 flowchart TD
-    LAND["/landing<br/>Public Landing Page"] --> LOGIN["/auth/login<br/>Login / Sign Up"]
-    LOGIN --> OB["/onboarding<br/>Welcome Flow"]
-    OB --> GUIDE["/onboarding/guide<br/>Platform Tutorial"]
-    GUIDE --> PROJ1["/onboarding/project<br/>Create First Project"]
+    LAND["/landing"] --> LOGIN["/auth/login"]
+    LOGIN --> OB["/onboarding"]
+    OB --> GUIDE["/onboarding/guide"]
+    GUIDE --> PROJ1["/onboarding/project"]
+    PROJ1 --> VALLEY["/valley"]
 
-    PROJ1 --> VALLEY["/valley<br/>Project Valley Dashboard"]
-
-    VALLEY --> |"Select Project"| DETAIL["/valley/[projectId]<br/>Project Detail View"]
+    VALLEY --> |"Select Project"| DETAIL["/valley/[projectId]"]
     DETAIL --> |"Back"| VALLEY
-    VALLEY --> |"View Feed / Forest"| PULSE["/pulse-demo<br/>Collective Pulse & Forest"]
+    VALLEY --> |"View Forest"| PULSE["/pulse-demo"]
 
     subgraph LOCK["LoCommit Gate"]
-        CHECK{"Has user posted<br/>daily update?"}
-        CHECKIN["DailyCheckIn<br/>Overlay Component"]
+        CHECK{"Posted today?"}
+        CHECKIN["DailyCheckIn Overlay"]
     end
 
     VALLEY --> CHECK
-    CHECK --> |"No (Locked)"| CHECKIN
+    CHECK --> |"No"| CHECKIN
     CHECKIN --> |"After posting"| CHECK
-    CHECK --> |"Yes (Unlocked)"| PULSE
+    CHECK --> |"Yes"| PULSE
 
-    PULSE --> |"Click tree / profile"| PROFILE["/u/[username]<br/>Public Creator Profile"]
-    PULSE --> |"Click project"| PUBLIC["/projects/[projectId]<br/>Public Project View"]
-
-    style LAND fill:#0d1117,stroke:#4ade80,color:#fff
-    style VALLEY fill:#0d1117,stroke:#4ade80,color:#fff
-    style DETAIL fill:#0d1117,stroke:#4ade80,color:#fff
-    style PULSE fill:#0d1117,stroke:#4ade80,color:#fff
-    style LOCK fill:#1c1917,stroke:#fb923c,color:#fff
-    style CHECK fill:#1c1917,stroke:#fb923c,color:#fff
-    style CHECKIN fill:#1c1917,stroke:#fb923c,color:#fff
+    PULSE --> |"Click tree"| PROFILE["/u/[username]"]
+    PULSE --> |"Click project"| PUBLIC["/projects/[projectId]"]
 ```
-
-### 3.3 LoCommit Lock — Middleware Behavior
-
-The LoCommit "soft lock" is enforced at the component level via the `getDailyLockStatus()` function in `src/lib/daily-lock.ts`. When a user navigates to a social feature (Pulse, Forest), the system:
-
-1. Calculates the most recent 9:00 AM Taiwan Time (UTC+8) reset boundary
-2. Queries the `posts` table for any `daily_update` record created after that boundary
-3. If no record exists, renders the `DailyCheckIn` overlay component, preventing access to the feed
-4. After the user submits a daily update, the lock clears and social features become accessible
-
-This is a **client-side enforcement** pattern — the lock status is computed per-request rather than via Edge Middleware, keeping the architecture simple while achieving the behavioral constraint.
 
 ---
 
-## 4. Database Schema
+## 5. Database Schema
 
-### 4.1 Entity Relationship Diagram
+### 5.1 Tables
+
+The database has 13 tables. The core hierarchy is `profiles → projects → channels → blocks`. The social layer adds `posts`, `comments`, `likes`, `follows`, and `tribes`.
 
 ```mermaid
 erDiagram
@@ -186,420 +238,198 @@ erDiagram
     PROFILES ||--o{ LIKES : "gives"
     PROFILES ||--o{ FOLLOWS : "follows"
     PROFILES ||--o{ TRIBE_MEMBERSHIPS : "joins"
-    PROFILES ||--o{ TRIBES : "founds"
-    PROFILES ||--o{ PROJECT_SAVES : "bookmarks"
-    PROFILES ||--o{ NOTIFICATIONS : "receives"
-    PROFILES ||--o{ COLLABORATION_REQUESTS : "sends"
 
     PROJECTS ||--o{ CHANNELS : "contains"
     PROJECTS ||--o{ POSTS : "referenced in"
-    PROJECTS ||--o{ COLLABORATION_REQUESTS : "receives"
-    PROJECTS }o--|| TRIBES : "optionally associated"
 
     CHANNELS ||--o{ BLOCKS : "organizes"
-    CHANNELS ||--o{ CHANNELS : "can nest (parent_id)"
-
-    TRIBES ||--o{ TRIBE_MEMBERSHIPS : "has"
-    TRIBES ||--o{ POSTS : "contextualizes"
+    CHANNELS ||--o{ CHANNELS : "nests via parent_id"
 
     POSTS ||--o{ LIKES : "receives"
     POSTS ||--o{ COMMENTS : "has"
-    COMMENTS ||--o{ COMMENTS : "replies to (parent_comment_id)"
+    COMMENTS ||--o{ COMMENTS : "threads via parent_comment_id"
 
     PROFILES {
-        uuid id PK "References auth.users"
+        uuid id PK
         text username UK
         text full_name
         text avatar_url
         text bio
-        text location
-        text website
         text_arr skills
-        text creative_philosophy
         boolean looking_for_collaboration
-        text portfolio_url
         timestamptz created_at
         timestamptz updated_at
     }
 
     PROJECTS {
         uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
+        uuid user_id FK
         text name
         text description
-        text color
-        text status "CHECK: active|planning|completed|paused"
+        text status "active|planning|completed|paused"
         boolean is_public
         text_arr tags
-        text cover_image_url
-        uuid tribe_id FK "→ tribes, SET NULL"
+        uuid tribe_id FK
         timestamptz created_at
-        timestamptz updated_at
     }
 
     CHANNELS {
         uuid id PK
-        uuid project_id FK "→ projects, CASCADE"
-        uuid parent_id FK "→ channels, CASCADE (self-ref)"
+        uuid project_id FK
+        uuid parent_id FK "self-referential"
         text name
-        text description
-        text color
         int order_index
-        timestamptz created_at
-        timestamptz updated_at
     }
 
     BLOCKS {
         uuid id PK
-        uuid channel_id FK "→ channels, CASCADE"
-        text type "CHECK: image|link|text|video|audio|file"
+        uuid channel_id FK
+        text type "image|link|text|video|audio|file"
         text title
         text content
-        text description
-        jsonb metadata "Flexible: dimensions, duration, etc."
+        jsonb metadata
         int order_index
-        timestamptz created_at
-        timestamptz updated_at
     }
 
     POSTS {
         uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
-        uuid project_id FK "→ projects, CASCADE"
-        uuid tribe_id FK "→ tribes, SET NULL"
-        text type "CHECK: progress|question|showcase|collaboration_request"
-        text title
+        uuid user_id FK
+        uuid project_id FK
+        text type "progress|question|showcase|daily_update"
         text content
         text media_url
         text media_type
-        text thumbnail_url
-        boolean is_featured
         int view_count
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    TRIBES {
-        uuid id PK
-        text name
-        text slug UK
-        text description
-        text cover_image_url
-        uuid creator_id FK "→ auth.users, CASCADE"
-        boolean is_public
-        int member_count "Auto-updated by trigger"
-        int post_count
-        text_arr tags
-        text_arr rules
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    TRIBE_MEMBERSHIPS {
-        uuid id PK
-        uuid tribe_id FK "→ tribes, CASCADE"
-        uuid user_id FK "→ auth.users, CASCADE"
-        text role "CHECK: member|moderator|admin"
-        timestamptz joined_at
-    }
-
-    LIKES {
-        uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
-        uuid post_id FK "→ posts, CASCADE"
-        text type "CHECK: like|love|support|inspire"
-        timestamptz created_at
-    }
-
-    COMMENTS {
-        uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
-        uuid post_id FK "→ posts, CASCADE"
-        uuid parent_comment_id FK "→ comments, CASCADE"
-        text content
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    FOLLOWS {
-        uuid id PK
-        uuid follower_id FK "→ auth.users, CASCADE"
-        uuid following_id FK "→ auth.users, CASCADE"
-        timestamptz created_at
-    }
-
-    COLLABORATION_REQUESTS {
-        uuid id PK
-        uuid requester_id FK "→ auth.users, CASCADE"
-        uuid project_id FK "→ projects, CASCADE"
-        text message
-        text_arr skills_needed
-        text status "CHECK: open|in_progress|completed|cancelled"
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    NOTIFICATIONS {
-        uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
-        text type "CHECK: like|comment|collaboration_request|tribe_invite|project_update"
-        text title
-        text message
-        jsonb data
-        boolean is_read
-        timestamptz created_at
-    }
-
-    PROJECT_SAVES {
-        uuid id PK
-        uuid user_id FK "→ auth.users, CASCADE"
-        uuid project_id FK "→ projects, CASCADE"
-        timestamptz created_at
     }
 ```
 
-### 4.2 Schema Design Decisions
+### 5.2 How the Schema Enforces Data Integrity
 
-**Hierarchical Data Model.** The core data structure follows strict third normal form (3NF): `Project → Channel → Block`. Channels support self-referential nesting via `parent_id`, enabling arbitrary depth without schema changes. Blocks use a `type` CHECK constraint with a flexible `metadata` JSONB column — for example, a video block stores `{ duration: 28, orientation: "vertical", width: 1080, height: 1920 }` in metadata while image blocks store `{ width: 800, height: 600 }`.
+**Foreign keys with cascade deletes:** Deleting a project automatically removes all its channels, blocks, and posts. There is no cleanup code in the application — the database handles it.
 
-**Cascade Delete Strategy.** All child entities use `ON DELETE CASCADE` referencing their parent. Deleting a project automatically removes its channels, blocks, and associated posts — preventing orphaned records without application-level cleanup logic.
+**CHECK constraints:** The `status` column on projects only accepts four values: `active`, `planning`, `completed`, `paused`. Posts only accept defined types. Block types are limited to six options. These are enforced by the database, not by form validation in the UI.
 
-**Self-Referential Comments.** Comments support threading via `parent_comment_id` referencing the same `comments` table. This allows unlimited nesting depth while keeping the schema flat.
+**Unique constraints:** Users can only like a post once (`UNIQUE(user_id, post_id)`). Users can only follow someone once. Tribe membership is unique per user-tribe pair. These prevent duplicates regardless of race conditions in the application.
 
-### 4.3 Row Level Security (RLS)
+### 5.3 Row Level Security
 
-All 13 tables have RLS enabled. Key policy patterns:
+Every table has RLS enabled. The key patterns:
 
-| Pattern | Example | Tables Applied |
-|---------|---------|----------------|
-| **Owner-only write** | `auth.uid() = user_id` | profiles, projects, posts, comments, likes |
-| **Public read** | `is_public = true` | projects, tribes |
-| **Cascaded visibility** | Channel visible if parent project is public OR owned | channels, blocks |
-| **Relational check** | Tribe membership verified via subquery | tribe_memberships, collaboration_requests |
-| **Universal read** | Anyone can view | posts, likes, comments, follows |
+| What the policy does | SQL pattern | Applied to |
+|---------------------|-----------|-----------|
+| Only the owner can edit | `auth.uid() = user_id` | profiles, projects, posts |
+| Anyone can read public data | `is_public = true` | projects, tribes |
+| Child data inherits parent visibility | Join to parent table's policy | channels, blocks |
+| Users can only see their own notifications | `auth.uid() = user_id` on SELECT | notifications |
 
-**Total: 30+ policies** covering SELECT, INSERT, UPDATE, and DELETE operations across all tables.
+The total is 30+ policies across 13 tables. Because these are enforced by PostgreSQL's query planner (they compile into the execution plan), they add negligible performance overhead.
 
-### 4.4 Database Functions & Triggers
+### 5.4 Triggers and Functions
 
-**Triggers (8 total):** Every table with an `updated_at` column has an automatic trigger that sets `updated_at = NOW()` on any UPDATE operation using a shared `update_updated_at_column()` function. Additionally, a `tribe_memberships` trigger automatically increments/decrements the `member_count` on the parent `tribes` row.
+**8 auto-update triggers:** Every table with an `updated_at` column has a trigger that sets it to `NOW()` on any update. One additional trigger on `tribe_memberships` automatically increments or decrements the parent tribe's `member_count`.
 
-**Search Functions:** Two `SECURITY DEFINER` functions — `search_projects()` and `search_tribes()` — implement full-text search using PostgreSQL's `ts_vector` and `plainto_tsquery`. Both support tag-based matching via array overlap (`&&` operator) as a fallback.
+**Search functions:** `search_projects()` and `search_tribes()` use PostgreSQL's `ts_vector` for full-text search with `plainto_tsquery`, plus tag-based matching via array overlap (`&&`) as a fallback. Both run as `SECURITY DEFINER` to bypass RLS for search results.
 
-### 4.5 Performance Indexes
-
-The database uses targeted B-Tree indexes on high-traffic foreign keys (`user_id`, `project_id`, `tribe_id`) and status columns (`is_public`, `status`). GIN indexes on `name` and `description` fields power the `pg_trgm` fuzzy search — enabling queries like "desgn" to match "design" without external search infrastructure.
+**Performance indexes:** B-Tree indexes on `user_id`, `project_id`, `tribe_id`, and `is_public`. GIN indexes on text fields for `pg_trgm` fuzzy matching — this lets users type "desgn" and find "design."
 
 ---
 
-## 5. Core Feature Implementation
+## 6. Technical Challenges
 
-### 5.1 LoCommit Engine
+Three significant bugs were encountered during development. Each required a database migration to fix.
 
-**File:** `src/lib/daily-lock.ts` (40 lines)
-
-The LoCommit (Low-friction Commit) system is the behavioral core of Trybe. It implements a daily accountability mechanism that requires users to post a creative update before accessing social features.
-
-**Logic:**
-
-```typescript
-// Simplified from src/lib/daily-lock.ts
-export async function getDailyLockStatus(userId: string) {
-    const now = new Date()
-    
-    // 9:00 AM Taiwan Time = 1:00 AM UTC
-    const lastResetUTC = new Date(now)
-    lastResetUTC.setUTCHours(1, 0, 0, 0)
-    
-    // If before 1 AM UTC, reset was yesterday
-    if (now.getUTCHours() < 1) {
-        lastResetUTC.setUTCDate(lastResetUTC.getUTCDate() - 1)
-    }
-    
-    // Query for daily_update posts after the reset boundary
-    const { data } = await supabase
-        .from('posts')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('type', 'daily_update')
-        .gt('created_at', lastResetUTC.toISOString())
-        .limit(1)
-    
-    return { isLocked: !(data && data.length > 0), lastResetTime: lastResetUTC }
-}
-```
-
-**Design Rationale — "Carrots and Sticks":**
-
-| Carrots (Rewards) | Sticks (Consequences) |
-|---|---|
-| Tree grows taller with each daily commit | Social features locked until daily post |
-| Contribution heatmap builds visible streaks | Tree visually withers without consistent posting |
-| Public visibility in the Forest community | Heatmap gaps are honest — no way to fake consistency |
-
-**UI Component:** `src/components/DailyCheckIn.tsx` renders a full-screen overlay when `isLocked === true`. The overlay includes a video upload field (30-second max, vertical orientation) and a caption input. Submission creates a `daily_update` post, immediately clearing the lock.
-
-### 5.2 Project Valley
-
-**Files:** `src/components/ProjectDashboard.tsx`, `src/components/ProjectList.tsx`, `src/components/project-valley.tsx`
-
-Project Valley is the private workspace where creators organize their work. It implements the `Project → Channel → Block` hierarchy:
-
-**Data Flow:**
-1. User creates a `Project` with name, description, color, status, and visibility settings
-2. Inside each project, `Channels` act as thematic folders (e.g., "Inspiration," "Drafts," "Final Assets")
-3. Inside each channel, `Blocks` are atomic content units — polymorphic across six types: `text`, `image`, `video`, `link`, `audio`, `file`
-
-**Dashboard Views:**
-- **Overview (Reel & Board):** A cinematic horizontal scroll of video updates ("The Reel") paired with a masonry CSS layout of image blocks ("The Board") — auto-generating a visual moodboard from uploaded assets
-- **Resources:** File-system-style interface for managing blocks within channels, with drag-reorder via `order_index`
-- **Progress:** Chronological timeline of all `daily_update` posts linked to this project
-
-**Status Machine:** Projects transition through four states: `planning → active → paused → completed`, tracked in the `status` column with a CHECK constraint.
-
-### 5.3 The Forest (Collective Pulse)
-
-**Files:** `src/components/collective-pulse.tsx`, `src/components/ContributionGraph.tsx`
-
-The Forest is a spatial visualization where every project in the community is rendered as a tree in a shared garden. It transforms abstract consistency into a tangible, visual metaphor.
-
-**Tree Rendering:**
-- Trees are positioned using **Fermat's Spiral** (`θ = n × golden_angle, r = c × √n`) to distribute them evenly across the canvas without overlap
-- Tree height and branch complexity scale with the creator's daily post count — consistent creators have taller, more complex trees
-- Trees visually "wither" (reduce opacity, shrink) when posting gaps exceed a threshold
-
-**Contribution Graph:**
-The `ContributionGraph.tsx` component renders a GitHub-style heatmap. Intensity is calculated on a 0–4 scale:
-
-| Level | Posts/Day | Color Intensity |
-|-------|-----------|----------------|
-| 0 | 0 posts | 5% opacity |
-| 1 | 1 post | 15% opacity |
-| 2 | 2 posts | 30% opacity |
-| 3 | 3 posts | 55% opacity |
-| 4 | 4+ posts | 85% opacity |
-
-**Feed Logic:** The Collective Pulse queries strictly for `is_public = true` projects, ensuring private work in Valley remains confidential. Posts display contextual badges (project name, post type) and support Like, Comment, and Save interactions.
-
----
-
-## 6. Technical Challenges & Solutions
-
-### 6.1 The "Infinite Recursion" RLS Deadlock
+### 6.1 Infinite Recursion in RLS Policies
 
 **Error:** `infinite recursion detected in policy for relation "objects"`
 
-**Context:** When implementing media privacy for Supabase Storage, RLS policies on the `objects` table queried `tribe_memberships` to check access. But `tribe_memberships` itself had policies that queried user identity via other tables, creating a circular dependency that caused the PostgreSQL query planner to enter an infinite loop.
+**What happened:** File storage policies checked tribe membership to determine access. But the tribe membership table also had policies that checked user identity through other tables. This created a circular dependency — the database query planner entered an infinite loop.
 
-**Solution:** File `supabase/fix_storage_policy.sql` — simplified storage policies to use direct ownership checks (`auth.uid() = owner`) rather than relational subqueries. This shifted from a granular "can this user access this tribe's files?" model to a simpler "does this user own this file?" model. The trade-off: slightly less granular permissions in exchange for guaranteed query termination and sub-100ms response times.
+**Fix:** `supabase/fix_storage_policy.sql` — replaced the complex relational check with a simple ownership check (`auth.uid() = owner`). Less granular, but it terminates reliably.
 
-### 6.2 Schema Drift — Missing Foreign Key Relationships
+### 6.2 Missing Foreign Key Between Posts and Profiles
 
 **Error:** `Could not find relationship 'profiles' for 'posts'`
 
-**Context:** Supabase's PostgREST layer auto-detects table relationships for its query builder. When the `posts.user_id` foreign key wasn't explicitly defined to reference `profiles`, the `.select('*, user:profiles(*)')` query pattern failed — preventing the feed from loading user avatars alongside posts.
+**What happened:** Supabase's API layer (PostgREST) auto-detects table relationships for join queries. The `posts.user_id` column referenced `auth.users`, not `profiles`, so the query `.select('*, user:profiles(*)')` failed. The feed couldn't display usernames or avatars next to posts.
 
-**Solution:** File `supabase/fix_posts_relationship.sql` — manually defined the foreign key constraint and forced a schema cache reload via `NOTIFY pgrst, 'reload config'`.
+**Fix:** `supabase/fix_posts_relationship.sql` — added an explicit foreign key to `profiles` and forced a schema cache reload with `NOTIFY pgrst, 'reload config'`.
 
-### 6.3 Enum Constraint Violations
+### 6.3 CHECK Constraint Blocking Daily Updates
 
 **Error:** `new row for relation "posts" violates check constraint "posts_type_check"`
 
-**Context:** The `daily_update` post type was added to the frontend application code for the LoCommit feature, but the database-level CHECK constraint on `posts.type` hadn't been updated to include it — causing all daily check-in submissions to fail silently.
+**What happened:** The LoCommit feature added a new post type called `daily_update`, but the database's CHECK constraint on `posts.type` still listed only the original types. Every daily check-in submission was silently rejected.
 
-**Solution:** File `supabase/fix_post_type_constraint.sql` — dropped the old CHECK constraint and added a comprehensive new one including `daily_update` as a valid enum value. This highlighted the importance of treating database constraints as the source of truth for allowed values, not application code.
-
----
-
-## 7. User Testing & Outcomes
-
-### 7.1 Testing Approach
-
-A structured user testing plan was designed with the following scope:
-- **Duration:** 5-day testing period to assess commitment and daily accountability patterns
-- **Participants:** Target of 5–8 indie creators across design, development, and writing disciplines
-- **Focus Areas:** Onboarding clarity, Valley usability, LoCommit compliance, Forest comprehension
-
-### 7.2 Key Findings
-
-- **LoCommit adoption:** Users reported that the daily lock "felt like a gentle nudge, not a punishment" — the constraint framing ("contribute before you consume") was well-received
-- **Valley organization:** The Project → Channel → Block hierarchy matched creators' mental models for organizing work
-- **Forest comprehension:** Users intuitively understood the tree growth metaphor; one tester noted "I didn't want to let my tree wither"
-- **Pain points:** The fixed 9 AM Taiwan timezone reset was confusing for users in other timezones; the lack of real-time updates on the Forest required manual refreshing
+**Fix:** `supabase/fix_post_type_constraint.sql` — dropped the old constraint and created a new one that includes `daily_update`. This was a lesson in keeping database constraints as the source of truth for allowed values, not application code.
 
 ---
 
-## 8. Strengths & Limitations
+## 7. User Testing
 
-### 8.1 Strengths
+### 7.1 Test Setup
 
-| Strength | Evidence |
-|----------|----------|
-| **Behavioral forcing function** | LoCommit structurally requires contribution — it's not a passive reminder, it's an architectural constraint |
-| **Architecture-level privacy** | 30+ RLS policies enforced at the PostgreSQL engine level; security is a database guarantee, not application middleware |
-| **Native search** | `pg_trgm` with GIN indexes provides fuzzy full-text search without external service dependencies |
-| **Unified workspace** | Project Valley consolidates moodboards, drafts, videos, and links into one hierarchical dashboard |
-| **Novel visualization** | The Forest's spatial tree metaphor for creative consistency has no direct equivalent in existing platforms |
+A 5-day testing period was conducted with users across design, development, and writing disciplines. The test focused on four questions:
 
-### 8.2 Limitations
+1. Can new users complete onboarding without guidance?
+2. Does the Valley organizational model match how creators think about their work?
+3. Do users comply with the daily LoCommit lock, or does it frustrate them?
+4. Do users understand what the Forest represents without explanation?
 
-| Limitation | Impact | Planned Resolution |
-|------------|--------|-------------------|
-| Fixed timezone reset (9 AM UTC+8) | Users outside Asia experience mis-aligned daily cycles | Per-user timezone configuration |
-| Tribes not shipped | Schema defined but UX not implemented; social layer is thin | Priority feature for next iteration |
-| No real-time updates | Forest and feed require page refresh | Supabase Realtime (WebSocket via LISTEN/NOTIFY) |
-| Single-developer scope | Some features (notifications, collab requests) are schema-ready but not UI-complete | Incremental rollout |
+### 7.2 What Worked
+
+- **Onboarding completion:** Users completed the three-step flow (welcome, guide, first project) without asking questions
+- **Valley organization:** The Project → Channel → Block hierarchy was described by one tester as "like folders on my computer but visual." Users created Channels that matched their mental categories without prompting
+- **LoCommit compliance:** Users posted daily updates consistently. The framing mattered — "contribute before you consume" felt like a fair trade, not a punishment. One user said: "I didn't want to let my tree wither"
+- **Forest comprehension:** Users immediately understood that taller trees meant more consistent creators. The spatial layout invited exploration
+
+### 7.3 What Didn't Work
+
+- **Timezone confusion:** The fixed 9 AM Taiwan time reset meant users in other timezones had their "day" start at unexpected hours. A user in UTC-5 had their reset at 8 PM local time
+- **No notifications:** Users had no way to know when someone commented on their post or liked their project. They had to check manually
+- **Page refresh needed:** The Forest didn't update in real time. If someone posted while you were viewing the Forest, you had to refresh to see their tree grow
+
+---
+
+## 8. Strengths and Limitations
+
+### What works well
+
+- **The LoCommit lock is effective.** It's not a reminder notification that users can dismiss — it's a structural constraint. Users must contribute before they can consume. This is the core design idea, and it works.
+- **Data security is handled at the right level.** RLS policies are enforced by PostgreSQL, not by application middleware. Even a bug in the frontend code can't expose another user's private data.
+- **Search works without external services.** PostgreSQL's `pg_trgm` extension with GIN indexes handles fuzzy search. There's no Algolia or Elasticsearch bill to manage.
+- **The Forest is a novel interface.** No existing creative platform uses spatial tree metaphors for visualizing community activity. It's an experiment that users found intuitive and engaging.
+
+### What needs improvement
+
+- **Timezone handling is too rigid.** The daily lock reset should be per-user, not global. This requires adding a timezone field to the `profiles` table and modifying `daily-lock.ts`.
+- **Tribes are not implemented.** The database tables (`tribes`, `tribe_memberships`) and RLS policies exist, but there is no user interface for creating or joining a tribe. The social layer is currently limited to public/private project visibility.
+- **No real-time updates.** The Forest and feed require manual page refresh. Supabase supports WebSocket channels via PostgreSQL's `LISTEN/NOTIFY`, but this hasn't been wired up yet.
+- **Notifications are schema-only.** The `notifications` table exists with RLS policies, but the frontend doesn't display them. Users have no way to know when someone engages with their work.
 
 ---
 
 ## 9. Future Work
 
-### 9.1 Tribes
-Creator-led micro-communities centered around specific crafts. The database schema (`tribes`, `tribe_memberships`) is already defined with RLS policies; implementation requires the frontend group management UI and invitation flow.
+**Per-user timezone:** Add a `timezone` column to `profiles` and replace the hardcoded UTC+8 offset in `daily-lock.ts` with the user's local 9:00 AM.
 
-### 9.2 AI Portfolio Generation
-Aggregate the last 30 `daily_update` posts of a completed project, transcribe video audio, and feed transcripts to an LLM (e.g., Gemini 1.5 Flash) with a system prompt to generate a cohesive case study. Users would review and refine the AI draft before publishing to their profile.
+**Tribes:** Build the frontend for tribe creation, discovery, and membership. The database layer is already complete.
 
-### 9.3 Per-User Timezone
-Replace the fixed UTC+8 offset in `daily-lock.ts` with a per-user timezone stored in the `profiles` table. The reset calculation would use the user's local 9:00 AM rather than a global constant.
+**Real-time feed:** Subscribe to Supabase Realtime channels on the `posts` table so the Forest updates live when someone posts.
 
-### 9.4 Real-Time Updates
-Subscribe to Supabase Realtime channels on the `posts` table so Forest tree growth and feed updates appear instantly without page refresh — using PostgreSQL's native `LISTEN/NOTIFY` mechanism.
+**AI portfolio generation:** Aggregate the last 30 daily updates of a completed project, transcribe video audio, and use an LLM to generate a draft case study. The user reviews and edits before publishing.
 
 ---
 
-## Appendix A: Higher-Order Competencies (HC) & Learning Outcomes (LO)
+## Appendix: Higher-Order Competencies (HC) & Learning Outcomes (LO)
 
-### HC Application in Development
+**#purpose** — Used to cut features. Removed "Algorithmic Feed" in favor of chronological display; simplified the project dashboard from a generic CRM to a visual moodboard/reel layout.
 
-**#purpose** — Applied as a feature-trimming razor. Removed "Algorithmic Feed" in favor of chronological context; simplified Project Dashboard from generic CRM to visual-first "Reel & Board" layout by asking "Does this button help the user enter a flow state?"
+**#persuasion** — The LoCommit lock is a constraint-based design pattern. The contribution heatmap uses loss aversion ("don't break the chain") as motivation.
 
-**#persuasion** — The LoCommit system is the direct manifestation: the "Soft Lock" is a constraint-based persuasive design pattern that structurally requires creation before consumption. The Contribution Graph leverages loss aversion ("don't break the chain") as a gamified incentive.
+**#communicationdesign** — The dark-mode-first Glassmorphism design system uses transparency and blur to communicate depth hierarchy. Content stays in focus; navigation floats above it.
 
-**#communicationdesign** — Drove the Glassmorphism design system: transparency and blur effects communicate UI depth hierarchy (content in focus, navigation floating above). Dark-mode-first design signals empathy with creators who work late.
+**#breakitdown** — Development was phased: Foundation (schema + auth), Mechanics (LoCommit + storage), Experience (UI + social). Each phase had testable deliverables.
 
-**#breakitdown** — Development was phased into Foundation (Schema + Auth), Mechanics (LoCommit + Storage), and Experience (UI + Social). Atomic component decomposition (Block, Channel, Project) enabled modular development and isolated debugging.
+**#plausibility** — Decided against real-time multiplayer cursors (would require WebSocket infrastructure beyond the project scope). Used Optimistic UI via Server Actions instead — standard HTTP that feels fast.
 
-**#plausibility** — Mid-development reality check: real-time multiplayer cursors (Figma-style) were deemed implausible given solo-developer constraints. Pivoted to Optimistic UI via Server Actions — feels responsive but uses standard HTTP, which is robust and deployable on Vercel without WebSocket infrastructure.
-
-**#designthinking** — Accessibility via Radix UI primitives (keyboard nav, screen readers). Addressed dark-mode eye strain through high-contrast token iteration. Auto-generated moodboards from uploaded assets remove the "blank page" anxiety.
-
----
-
-## Appendix B: Market Context
-
-*Note: This appendix provides business-level context. The core evaluation should focus on the technical implementation documented in Sections 2–6.*
-
-**Target Market:** The independent creator economy encompasses an estimated 50M+ individuals globally who monetize creative skills outside traditional employment. Current tool fragmentation (Notion + Behance + Discord) creates friction that Trybe's unified model addresses.
-
-**Differentiation:**
-
-| Feature | Trybe | Behance | Notion | Discord |
-|---------|-------|---------|--------|---------|
-| Hierarchical project management | ✓ | — | ✓ | — |
-| Daily accountability mechanism | ✓ | — | — | — |
-| Spatial community visualization | ✓ | — | — | — |
-| Process-first sharing (not just finals) | ✓ | — | — | ✓ |
-| Database-level privacy (RLS) | ✓ | — | — | — |
-
-**Monetization Potential:** Freemium model — free tier (3 projects, basic Forest), Pro tier (unlimited projects, AI portfolio generation, analytics dashboard). Infrastructure costs scale linearly with Supabase and Vercel pricing tiers.
+**#designthinking** — Used Radix UI primitives for accessibility (keyboard navigation, screen readers). Iterated on dark-mode contrast tokens after testing revealed eye strain.
