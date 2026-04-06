@@ -3,6 +3,7 @@ export type BlockType = 'image' | 'link' | 'text' | 'video' | 'audio' | 'file'
 export type ProjectStatus = 'active' | 'planning' | 'completed' | 'paused'
 export type PostType = 'progress' | 'question' | 'showcase' | 'collaboration_request' | 'daily_update'
 export type TribeRole = 'member' | 'moderator' | 'admin'
+export type TribeStatus = 'pending' | 'active' | 'rejected'
 export type LikeType = 'like' | 'love' | 'support' | 'inspire'
 export type NotificationType = 'like' | 'comment' | 'collaboration_request' | 'tribe_invite' | 'project_update'
 export type CollaborationStatus = 'open' | 'in_progress' | 'completed' | 'cancelled'
@@ -23,6 +24,7 @@ export interface Profile {
   onboardingCompleted: boolean
   defaultTreeColor?: string
   defaultTreeConfig?: TreeConfig
+  isAdmin?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -37,6 +39,9 @@ export interface Tribe {
   iconUrl?: string
   creatorId: string
   isPublic: boolean
+  status: TribeStatus
+  rejectionReason?: string
+  color: string
   memberCount: number
   postCount: number
   tags?: string[]
@@ -46,6 +51,15 @@ export interface Tribe {
   creator?: Profile
   isMember?: boolean
   userRole?: TribeRole
+}
+
+// Tribe Unlock Status
+export interface TribeUnlockStatus {
+  streakCount: number
+  mediaCount: number
+  streakRequired: number
+  mediaRequired: number
+  isUnlocked: boolean
 }
 
 // Tribe Membership

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigation } from '@/components/navigation'
 import { Dashboard } from '@/components/dashboard'
@@ -14,7 +14,7 @@ import { Loader2, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react
 import { View, Project, Post, Tribe } from '@/types'
 // ... imports ...
 import { HomeDashboard } from '@/components/HomeDashboard'
-import { getPosts, getProjects, getUserProjects, createProject, deleteProject } from '@/lib/supabase/queries'
+import { getPosts, getProjects, getUserProjects, createProject, deleteProject, getUserTribes, joinTribe, leaveTribe, assignProjectToTribe } from '@/lib/supabase/queries'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -27,8 +27,16 @@ import DailyCheckIn from '@/components/DailyCheckIn'
 export default function ValleyPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [currentView, setCurrentView] = useState<View>('pulse')
+
+  useEffect(() => {
+    const view = searchParams.get('view') as View
+    if (view === 'pulse' || view === 'valley' || view === 'tribes') {
+      setCurrentView(view)
+    }
+  }, [searchParams])
   const [globalPosts, setGlobalPosts] = useState<Post[]>([])
 
   // State for data
@@ -36,6 +44,7 @@ export default function ValleyPage() {
   const [userProjects, setUserProjects] = useState<Project[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [tribes, setTribes] = useState<Tribe[]>([])
+  const [userTribes, setUserTribes] = useState<Tribe[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState<number>(320)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
@@ -55,20 +64,23 @@ export default function ValleyPage() {
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
   const [newIsPublic, setNewIsPublic] = useState(true)
+  const [newTribeIds, setNewTribeIds] = useState<string[]>([])
   const [creating, setCreating] = useState(false)
 
   // ... useEffect for checking lock ...
   useEffect(() => {
     const checkLock = async () => {
-      if (user) {
-        console.log('Checking lock status for user:', user.id)
-        const { isLocked } = await getDailyLockStatus(user.id)
-        console.log('Lock status result:', isLocked)
-        setIsLocked(isLocked)
+      if (!user) return
+      // Admins bypass the daily lock entirely
+      if (profile?.isAdmin) {
+        setIsLocked(false)
+        return
       }
+      const { isLocked } = await getDailyLockStatus(user.id)
+      setIsLocked(isLocked)
     }
     checkLock()
-  }, [user])
+  }, [user, profile])
 
   useEffect(() => {
     const loadProjectsAndPosts = async () => {
@@ -92,26 +104,11 @@ export default function ValleyPage() {
 
     if (user && profile) {
       loadProjectsAndPosts()
-
       setPosts(globalPosts)
-      // ... tribes mock data ...
-      setTribes([
-        {
-          id: '1',
-          name: 'Design Enthusiasts',
-          slug: 'design-enthusiasts',
-          description: 'A community for designers to share inspiration and collaborate',
-          creatorId: 'other-user',
-          isPublic: true,
-          memberCount: 156,
-          postCount: 23,
-          tags: ['design', 'ui', 'ux'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          isMember: true,
-          userRole: 'member',
-        },
-      ])
+      getUserTribes(user.id).then(ut => {
+        setUserTribes(ut)
+        setTribes(ut)
+      })
     }
   }, [user, profile])
 
@@ -158,12 +155,16 @@ export default function ValleyPage() {
     })
     setCreating(false)
     if (created) {
+      if (newTribeIds.length > 0) {
+        await Promise.all(newTribeIds.map(tid => assignProjectToTribe(created.id, tid)))
+      }
       setUserProjects(prev => [created, ...prev])
       setEcosystemProjects(prev => [created, ...prev])
       setShowCreate(false)
       setNewName('')
       setNewDescription('')
       setNewIsPublic(true)
+      setNewTribeIds([])
     }
   }
 
@@ -193,28 +194,34 @@ export default function ValleyPage() {
   }
 
   const handleCreateTribe = () => {
-    console.log('Create tribe')
-    // TODO: Implement tribe creation modal
+    router.push('/tribes/new')
   }
 
-  const handleJoinTribe = (tribeId: string) => {
-    console.log('Join tribe:', tribeId)
-    // TODO: Implement join tribe functionality
+  const handleJoinTribe = async (tribeId: string) => {
+    if (!user) return
+    const ok = await joinTribe(user.id, tribeId)
+    if (ok) {
+      setTribes(prev => prev.map(t => t.id === tribeId ? { ...t, isMember: true, memberCount: t.memberCount + 1 } : t))
+      const joined = tribes.find(t => t.id === tribeId)
+      if (joined) setUserTribes(prev => [...prev, { ...joined, isMember: true, userRole: 'member' }])
+    }
   }
 
-  const handleLeaveTribe = (tribeId: string) => {
-    console.log('Leave tribe:', tribeId)
-    // TODO: Implement leave tribe functionality
+  const handleLeaveTribe = async (tribeId: string) => {
+    if (!user) return
+    const ok = await leaveTribe(user.id, tribeId)
+    if (ok) {
+      setTribes(prev => prev.map(t => t.id === tribeId ? { ...t, isMember: false, memberCount: Math.max(0, t.memberCount - 1) } : t))
+      setUserTribes(prev => prev.filter(t => t.id !== tribeId))
+    }
   }
 
   const handleEditTribe = (tribe: Tribe) => {
-    console.log('Edit tribe:', tribe)
-    // TODO: Implement tribe editing
+    router.push(`/tribes/${tribe.slug}`)
   }
 
   const handleViewTribe = (tribe: Tribe) => {
-    console.log('View tribe:', tribe)
-    // TODO: Navigate to tribe detail page
+    router.push(`/tribes/${tribe.slug}`)
   }
 
   const handleUnlock = () => {
@@ -380,6 +387,7 @@ export default function ValleyPage() {
           <CollectivePulse
             posts={posts}
             projects={ecosystemProjects}
+            userTribes={userTribes}
             currentUserId={user?.id}
             onCreatePost={handleCreatePost}
             onLikePost={handleLikePost}
@@ -450,6 +458,32 @@ export default function ValleyPage() {
               />
               <label htmlFor="public" className="text-xs uppercase tracking-widest cursor-pointer select-none">Make Public</label>
             </div>
+            {userTribes.length > 0 && (
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase tracking-widest opacity-50">Assign to Tribes</label>
+                <div className="space-y-2">
+                  {userTribes.map(tribe => (
+                    <label key={tribe.id} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={newTribeIds.includes(tribe.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewTribeIds(prev => [...prev, tribe.id])
+                          } else {
+                            setNewTribeIds(prev => prev.filter(id => id !== tribe.id))
+                          }
+                        }}
+                        className="w-4 h-4 rounded-none border-neutral-300 text-black focus:ring-black"
+                      />
+                      <span className="text-xs uppercase tracking-widest group-hover:opacity-70 transition-opacity">
+                        {tribe.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex justify-end gap-4 pt-4">
               <button
                 onClick={() => setShowCreate(false)}

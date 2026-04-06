@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Post, Project } from '@/types'
+import { useState, useMemo, useEffect } from 'react'
+import { Post, Project, Tribe } from '@/types'
 import { Button } from '@/components/ui/button'
 import { ForestViewport } from './pulse/ForestViewport'
 import { ProjectTree } from './pulse/ProjectTree'
 import { Plus, Maximize2, Layers } from 'lucide-react'
+import { getTribeProjects } from '@/lib/supabase/queries'
 
 interface CollectivePulseProps {
   posts: Post[]
   projects: Project[]
+  userTribes?: Tribe[]
   currentUserId?: string
   onCreatePost: () => void
   onLikePost: (postId: string) => void
@@ -23,6 +25,7 @@ type Theme = 'amber' | 'green' | 'cga' | 'gameboy'
 export function CollectivePulse({
   posts,
   projects,
+  userTribes = [],
   currentUserId,
   onCreatePost,
   // onLikePost,
@@ -32,6 +35,23 @@ export function CollectivePulse({
 }: CollectivePulseProps) {
   const [theme] = useState<Theme>('amber')
   const [zoom, setZoom] = useState(1.0)
+  const [activeTribeId, setActiveTribeId] = useState<string | null>(null)
+  const [tribeProjectsCache, setTribeProjectsCache] = useState<Record<string, Project[]>>({})
+
+  // Load tribe projects when a tribe tab is selected (cached)
+  useEffect(() => {
+    if (!activeTribeId) return
+    if (tribeProjectsCache[activeTribeId]) return
+    getTribeProjects(activeTribeId).then(tribeProjs => {
+      setTribeProjectsCache(prev => ({ ...prev, [activeTribeId]: tribeProjs }))
+    })
+  }, [activeTribeId, tribeProjectsCache])
+
+  // Which projects to show — all (global) or tribe-filtered
+  const activeProjects = useMemo(() => {
+    if (!activeTribeId) return projects
+    return tribeProjectsCache[activeTribeId] || []
+  }, [activeTribeId, projects, tribeProjectsCache])
 
   // Group posts by project and distribute trees spatially
   const projectsWithTrees = useMemo(() => {
@@ -45,8 +65,8 @@ export function CollectivePulse({
 
     // Sort such that user's projects are at the center (start of array for Fermat's Spiral)
     // and randomizing the order of the rest.
-    const userProjs = projects.filter(p => p.userId === currentUserId)
-    const otherProjs = projects
+    const userProjs = activeProjects.filter(p => p.userId === currentUserId)
+    const otherProjs = activeProjects
       .filter(p => p.userId !== currentUserId)
       .sort(() => Math.random() - 0.5) // Randomize others
 
@@ -54,7 +74,6 @@ export function CollectivePulse({
 
     return sortedProjects.map((project, index) => {
       // Fermat's Spiral Distribution
-      // Ensure trees are spread out predictably and beautifully
       const angle = index * (Math.PI * (3 - Math.sqrt(5))) // Golden Angle
       const radius = 400 * Math.sqrt(index) // Tighter spread, starts at center
 
@@ -70,7 +89,7 @@ export function CollectivePulse({
         posts: postMap.get(project.id) || []
       }
     })
-  }, [posts, projects, currentUserId])
+  }, [posts, activeProjects, currentUserId])
 
   return (
     <div className="relative w-full h-full bg-transparent overflow-hidden font-mono transition-colors duration-700">
@@ -80,6 +99,35 @@ export function CollectivePulse({
           <h1 className="text-2xl font-bold tracking-tighter text-white">THE FOREST</h1>
           <p className="text-[10px] text-neutral-500 uppercase tracking-[0.3em] mt-1">Spatial Collective Pulse</p>
         </div>
+
+        {/* Tribe tabs */}
+        {userTribes.length > 0 && (
+          <div className="pointer-events-auto flex items-center gap-1 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-2 py-1.5 shadow-xl">
+            <button
+              onClick={() => setActiveTribeId(null)}
+              className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest transition-all font-mono ${
+                activeTribeId === null
+                  ? 'bg-white text-black font-bold'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              Global
+            </button>
+            {userTribes.map(tribe => (
+              <button
+                key={tribe.id}
+                onClick={() => setActiveTribeId(tribe.id)}
+                className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest transition-all font-mono ${
+                  activeTribeId === tribe.id
+                    ? 'bg-white text-black font-bold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {tribe.name}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* Spatial Viewport */}
