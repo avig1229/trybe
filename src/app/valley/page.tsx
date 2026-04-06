@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigation } from '@/components/navigation'
@@ -24,7 +24,7 @@ import { ContributionGraph } from '@/components/ContributionGraph'
 import DailyCheckIn from '@/components/DailyCheckIn'
 
 
-export default function ValleyPage() {
+function ValleyPageInner() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -70,9 +70,9 @@ export default function ValleyPage() {
   // ... useEffect for checking lock ...
   useEffect(() => {
     const checkLock = async () => {
-      if (!user) return
+      if (!user || !profile) return
       // Admins bypass the daily lock entirely
-      if (profile?.isAdmin) {
+      if (profile.isAdmin) {
         setIsLocked(false)
         return
       }
@@ -503,5 +503,13 @@ export default function ValleyPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function ValleyPage() {
+  return (
+    <Suspense>
+      <ValleyPageInner />
+    </Suspense>
   )
 }
