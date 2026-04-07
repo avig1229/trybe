@@ -321,9 +321,9 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
   const { data, error } = await supabase
     .from('tribe_memberships')
     .select(`
-      id, role, joined_at,
+      id, role, join_status, joined_at,
       tribe:tribes(
-        id, name, slug, description, cover_image_url, icon_url, 
+        id, name, slug, description, cover_image_url, icon_url,
         creator_id, is_public, member_count, post_count, tags,
         creator:profiles(id, username, full_name, avatar_url)
       )
@@ -336,7 +336,7 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
   }
 
   return (data || [])
-    .filter((membership: any) => membership.tribe !== null)
+    .filter((membership: any) => membership.tribe !== null && membership.join_status === 'approved')
     .map((membership: any) => ({
       ...mapTribeFromDb(membership.tribe as DbTribe),
       creator: membership.tribe.creator?.[0] || membership.tribe.creator,
@@ -425,20 +425,86 @@ export async function createTribe(tribe: Partial<Tribe>): Promise<Tribe | null> 
   } as Tribe
 }
 
-export async function joinTribe(userId: string, tribeId: string): Promise<boolean> {
+export async function joinTribe(userId: string, tribeId: string): Promise<'approved' | 'pending' | false> {
+  // Check if tribe is public to determine approval flow
+  const { data: tribeData } = await supabase
+    .from('tribes')
+    .select('is_public')
+    .eq('id', tribeId)
+    .single()
+
+  const joinStatus = tribeData?.is_public ? 'approved' : 'pending'
+
   const { error } = await supabase
     .from('tribe_memberships')
     .insert({
       user_id: userId,
       tribe_id: tribeId,
-      role: 'member'
+      role: 'member',
+      join_status: joinStatus,
     })
 
   if (error) {
+    if (error.code === '23505') return joinStatus // already requested
     console.error('Error joining tribe:', error)
     return false
   }
 
+  return joinStatus
+}
+
+export async function getPendingJoinRequests(tribeId: string): Promise<TribeMembership[]> {
+  const { data, error } = await supabase
+    .from('tribe_memberships')
+    .select(`
+      id, tribe_id, user_id, role, join_status, joined_at,
+      user:profiles(id, username, full_name, avatar_url, bio)
+    `)
+    .eq('tribe_id', tribeId)
+    .eq('join_status', 'pending')
+    .order('joined_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching pending join requests:', error)
+    return []
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    tribeId: row.tribe_id,
+    userId: row.user_id,
+    role: row.role as TribeRole,
+    joinStatus: row.join_status,
+    joinedAt: new Date(row.joined_at),
+    user: row.user ? mapProfileFromDb(row.user) : undefined,
+  }))
+}
+
+export async function approveJoinRequest(tribeId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .update({ join_status: 'approved' })
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+
+  if (error) { console.error('Error approving join request:', error); return false }
+
+  // Increment member count
+  await supabase.rpc('increment_member_count', { tribe_id: tribeId }).catch(() => {
+    supabase.from('tribes').update({ member_count: supabase.rpc('increment', {}) }).eq('id', tribeId)
+  })
+
+  return true
+}
+
+export async function rejectJoinRequest(tribeId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .update({ join_status: 'rejected' })
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+
+  if (error) { console.error('Error rejecting join request:', error); return false }
   return true
 }
 
@@ -943,10 +1009,11 @@ export async function getTribeMembers(tribeId: string): Promise<TribeMembership[
   const { data, error } = await supabase
     .from('tribe_memberships')
     .select(`
-      id, tribe_id, user_id, role, joined_at,
+      id, tribe_id, user_id, role, join_status, joined_at,
       user:profiles(id, username, full_name, avatar_url, bio)
     `)
     .eq('tribe_id', tribeId)
+    .eq('join_status', 'approved')
     .order('joined_at', { ascending: true })
 
   if (error) {
@@ -960,6 +1027,7 @@ export async function getTribeMembers(tribeId: string): Promise<TribeMembership[
     tribeId: row.tribe_id,
     userId: row.user_id,
     role: row.role as TribeRole,
+    joinStatus: row.join_status,
     joinedAt: new Date(row.joined_at),
     user: row.user ? mapProfileFromDb(row.user) : undefined,
   }))

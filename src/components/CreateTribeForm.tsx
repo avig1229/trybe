@@ -39,7 +39,14 @@ export function CreateTribeForm({ userId, unlockStatus, onSuccess, onCancel }: C
     const [description, setDescription] = useState('')
     const [tags, setTags] = useState<string[]>([])
     const [tagInput, setTagInput] = useState('')
-    const [rules, setRules] = useState<string[]>([''])
+    const [rules, setRules] = useState<string[]>([
+        'Be respectful and constructive in all interactions.',
+        'Share only your own original work, or give proper credit.',
+        'Keep posts relevant to this tribe\'s focus.',
+        'No spam or self-promotion without genuine contribution.',
+        'Give feedback that helps — critique the work, not the person.',
+        '',
+    ])
     const [color, setColor] = useState(TRIBE_COLORS[0].value)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')

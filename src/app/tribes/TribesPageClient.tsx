@@ -5,7 +5,7 @@ import { Tribe, TribeUnlockStatus } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Users, Search, Plus, ArrowRight, Lock } from 'lucide-react'
+import { Users, Search, Plus, ArrowRight, Lock, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { joinTribe, leaveTribe } from '@/lib/supabase/queries'
@@ -34,9 +34,14 @@ export default function TribesPageClient({ allTribes, userTribes, unlockStatus, 
 
     const handleJoin = async (tribeId: string) => {
         if (!userId) return
-        const ok = await joinTribe(userId, tribeId)
-        if (!ok) return
-        setTribes(prev => prev.map(t => t.id === tribeId ? { ...t, isMember: true, memberCount: t.memberCount + 1 } : t))
+        const result = await joinTribe(userId, tribeId)
+        if (!result) return
+        if (result === 'approved') {
+            setTribes(prev => prev.map(t => t.id === tribeId ? { ...t, isMember: true, memberCount: t.memberCount + 1 } : t))
+        } else {
+            // pending — mark as requested so button changes
+            setTribes(prev => prev.map(t => t.id === tribeId ? { ...t, joinRequested: true } : t))
+        }
     }
 
     const handleLeave = async (tribeId: string) => {
@@ -136,7 +141,7 @@ export default function TribesPageClient({ allTribes, userTribes, unlockStatus, 
 function TribeCard({
     tribe, userId, onJoin, onLeave
 }: {
-    tribe: Tribe
+    tribe: Tribe & { joinRequested?: boolean }
     userId?: string
     onJoin: (id: string) => void
     onLeave: (id: string) => void
@@ -144,20 +149,26 @@ function TribeCard({
     const [loading, setLoading] = useState(false)
 
     const handleAction = async () => {
-        setLoading(true)
-        if (tribe.isMember) await onLeave(tribe.id)
-        else await onJoin(tribe.id)
-        setLoading(false)
+        if (tribe.isMember) {
+            setLoading(true)
+            await onLeave(tribe.id)
+            setLoading(false)
+        } else if (!tribe.joinRequested) {
+            setLoading(true)
+            await onJoin(tribe.id)
+            setLoading(false)
+        }
     }
+
+    const isFounder = tribe.userRole === 'admin'
+    const isPending = tribe.joinRequested && !tribe.isMember
 
     return (
         <div className="group border border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 transition-all overflow-hidden">
-            {/* Color band */}
             <div className="h-1.5" style={{ backgroundColor: tribe.color }} />
 
             <div className="p-5 space-y-3">
                 <div className="flex items-start gap-3">
-                    {/* Icon */}
                     <div
                         className="h-10 w-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-black text-white"
                         style={{ backgroundColor: tribe.color }}
@@ -169,7 +180,9 @@ function TribeCard({
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <p className="font-bold text-sm truncate">{tribe.name}</p>
+                            {!tribe.isPublic && <Lock className="h-3 w-3 opacity-40 flex-shrink-0" />}
                             {tribe.isMember && <Badge variant="secondary" className="text-[9px] uppercase tracking-widest flex-shrink-0">Member</Badge>}
+                            {isPending && <Badge variant="outline" className="text-[9px] uppercase tracking-widest flex-shrink-0 text-amber-600 border-amber-400">Pending</Badge>}
                         </div>
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
                             <Users className="h-3 w-3" />
@@ -198,15 +211,22 @@ function TribeCard({
                     {userId && (
                         <button
                             onClick={handleAction}
-                            disabled={loading || tribe.userRole === 'admin'}
+                            disabled={loading || isFounder || isPending}
                             className={cn(
-                                'text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all font-bold',
+                                'text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all font-bold flex items-center gap-1',
                                 tribe.isMember
                                     ? 'border-red-300 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500'
-                                    : 'border-current hover-invert'
+                                    : isPending
+                                        ? 'border-amber-300 text-amber-600 opacity-70 cursor-default'
+                                        : 'border-current hover-invert'
                             )}
                         >
-                            {loading ? '…' : tribe.userRole === 'admin' ? <><Crown />&nbsp;Founder</> : tribe.isMember ? 'Leave' : 'Join'}
+                            {loading ? '…'
+                                : isFounder ? <><Crown />&nbsp;Founder</>
+                                : tribe.isMember ? 'Leave'
+                                : isPending ? <><Clock className="h-3 w-3" />&nbsp;Pending</>
+                                : tribe.isPublic ? 'Join'
+                                : 'Request'}
                         </button>
                     )}
                 </div>

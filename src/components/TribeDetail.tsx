@@ -5,11 +5,11 @@ import { Tribe, TribeMembership, Post, Project } from '@/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, LogOut, Settings, Crown, Shield, ExternalLink } from 'lucide-react'
+import { Users, LogOut, Settings, Crown, Shield, ExternalLink, Clock, Check, X } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
-import { leaveTribe, kickMember, promoteMember } from '@/lib/supabase/queries'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { leaveTribe, kickMember, promoteMember, getPendingJoinRequests, approveJoinRequest, rejectJoinRequest } from '@/lib/supabase/queries'
 import { EditTribeModal } from '@/components/EditTribeModal'
 
 interface TribeDetailProps {
@@ -26,10 +26,22 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
     const [activeTab, setActiveTab] = useState<Tab>('feed')
     const [editOpen, setEditOpen] = useState(false)
     const [memberList, setMemberList] = useState(members)
+    const [pendingRequests, setPendingRequests] = useState<TribeMembership[]>([])
+    const [pendingLoaded, setPendingLoaded] = useState(false)
     const router = useRouter()
 
     const isAdmin = tribe.userRole === 'admin'
     const isModerator = tribe.userRole === 'moderator' || isAdmin
+
+    // Load pending requests when mod/admin opens Members tab
+    const handleMembersTab = async () => {
+        setActiveTab('members')
+        if (isModerator && !pendingLoaded) {
+            const pending = await getPendingJoinRequests(tribe.id)
+            setPendingRequests(pending)
+            setPendingLoaded(true)
+        }
+    }
 
     const handleLeave = async () => {
         if (!currentUserId) return
@@ -47,10 +59,24 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
         setMemberList(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
     }
 
-    const tabs: { id: Tab; label: string; count: number }[] = [
-        { id: 'feed', label: 'Feed', count: posts.length },
-        { id: 'projects', label: 'Projects', count: projects.length },
-        { id: 'members', label: 'Members', count: memberList.length },
+    const handleApprove = async (userId: string) => {
+        const ok = await approveJoinRequest(tribe.id, userId)
+        if (ok) {
+            const approved = pendingRequests.find(r => r.userId === userId)
+            if (approved) setMemberList(prev => [...prev, { ...approved, joinStatus: 'approved' as const }])
+            setPendingRequests(prev => prev.filter(r => r.userId !== userId))
+        }
+    }
+
+    const handleReject = async (userId: string) => {
+        const ok = await rejectJoinRequest(tribe.id, userId)
+        if (ok) setPendingRequests(prev => prev.filter(r => r.userId !== userId))
+    }
+
+    const tabs: { id: Tab; label: string; count: number; onClick: () => void }[] = [
+        { id: 'feed', label: 'Feed', count: posts.length, onClick: () => setActiveTab('feed') },
+        { id: 'projects', label: 'Projects', count: projects.length, onClick: () => setActiveTab('projects') },
+        { id: 'members', label: 'Members', count: memberList.length, onClick: handleMembersTab },
     ]
 
     return (
@@ -70,7 +96,6 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
             {/* Tribe identity */}
             <div className="max-w-screen-xl mx-auto px-4 md:px-10 -mt-12 relative z-10">
                 <div className="flex flex-col md:flex-row md:items-end gap-5">
-                    {/* Icon / color block */}
                     <div
                         className="h-20 w-20 rounded-xl flex items-center justify-center text-2xl font-black text-white shadow-lg flex-shrink-0"
                         style={{ backgroundColor: tribe.color }}
@@ -83,12 +108,14 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                     <div className="flex-1 pb-2">
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-2xl font-black tracking-tight">{tribe.name}</h1>
+                            {!tribe.isPublic && (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-widest">Private</Badge>
+                            )}
                             {tribe.isMember && (
                                 <Badge variant="secondary" className="text-[10px] uppercase tracking-widest">Member</Badge>
                             )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 max-w-xl">{tribe.description}</p>
-
                         <div className="flex flex-wrap gap-2 mt-2">
                             {tribe.tags?.map(tag => (
                                 <span key={tag} className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded-full">
@@ -98,7 +125,6 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                         </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-2 pb-2">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Users className="h-3.5 w-3.5" />
@@ -117,7 +143,7 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                     </div>
                 </div>
 
-                {/* Rules callout */}
+                {/* Rules */}
                 {tribe.rules && tribe.rules.filter(r => r.trim()).length > 0 && (
                     <div className="mt-5 border border-dashed border-neutral-300 dark:border-neutral-700 p-4">
                         <p className="text-[10px] uppercase tracking-widest font-bold mb-2 opacity-60">Tribe Rules</p>
@@ -134,9 +160,9 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={tab.onClick}
                             className={cn(
-                                'px-5 py-3 text-xs font-bold uppercase tracking-widest transition-all border-b-2',
+                                'px-5 py-3 text-xs font-bold uppercase tracking-widest transition-all border-b-2 relative',
                                 activeTab === tab.id
                                     ? 'border-current opacity-100'
                                     : 'border-transparent opacity-40 hover:opacity-70'
@@ -144,6 +170,11 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                         >
                             {tab.label}
                             <span className="ml-2 opacity-50">({tab.count})</span>
+                            {tab.id === 'members' && isModerator && pendingRequests.length > 0 && (
+                                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full">
+                                    {pendingRequests.length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -219,13 +250,13 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                                         )}>
                                             {p.status}
                                         </span>
-                                        <Link
-                                            href={`/u/${p.user?.username}`}
-                                            onClick={e => e.stopPropagation()}
-                                            className="text-[10px] opacity-50 hover:opacity-100 ml-auto truncate"
+                                        {/* span instead of Link to avoid nested <a> */}
+                                        <span
+                                            onClick={e => { e.stopPropagation(); router.push(`/u/${p.user?.username}`) }}
+                                            className="text-[10px] opacity-50 hover:opacity-100 ml-auto truncate cursor-pointer"
                                         >
                                             @{p.user?.username}
-                                        </Link>
+                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -234,7 +265,46 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
 
                     {/* Members Tab */}
                     {activeTab === 'members' && (
-                        <div className="max-w-xl space-y-2">
+                        <div className="max-w-xl space-y-6">
+                            {/* Pending join requests — mods/admins only */}
+                            {isModerator && pendingRequests.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-[10px] uppercase tracking-widest font-bold opacity-50 flex items-center gap-2">
+                                        <Clock className="h-3 w-3" /> Pending Requests ({pendingRequests.length})
+                                    </p>
+                                    {pendingRequests.map(r => (
+                                        <div key={r.id} className="flex items-center gap-3 py-2.5 border border-amber-200 dark:border-amber-900/40 px-3 bg-amber-50 dark:bg-amber-900/10">
+                                            <Avatar className="h-8 w-8 rounded-none">
+                                                <AvatarImage src={r.user?.avatarUrl} />
+                                                <AvatarFallback className="rounded-none text-xs">
+                                                    {r.user?.username?.charAt(0).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold">@{r.user?.username}</p>
+                                                <p className="text-[10px] text-muted-foreground truncate">{r.user?.bio}</p>
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                <button
+                                                    onClick={() => handleApprove(r.userId)}
+                                                    className="flex items-center gap-1 text-[10px] px-2 py-1 border border-emerald-400 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all uppercase tracking-widest"
+                                                >
+                                                    <Check className="h-3 w-3" /> Approve
+                                                </button>
+                                                <button
+                                                    onClick={() => handleReject(r.userId)}
+                                                    className="flex items-center gap-1 text-[10px] px-2 py-1 border border-red-300 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all uppercase tracking-widest"
+                                                >
+                                                    <X className="h-3 w-3" /> Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="border-b border-neutral-100 dark:border-neutral-800 pt-2" />
+                                </div>
+                            )}
+
+                            {/* Approved members */}
                             {memberList.map(m => (
                                 <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
                                     <Avatar className="h-8 w-8 rounded-none">
@@ -254,7 +324,6 @@ export function TribeDetail({ tribe, members, posts, projects, currentUserId }: 
                                         {m.role === 'moderator' && <span title="Moderator"><Shield className="h-3.5 w-3.5 text-sky-500" /></span>}
                                         <span className="text-[10px] uppercase tracking-widest opacity-50">{m.role}</span>
 
-                                        {/* Admin controls */}
                                         {isAdmin && m.userId !== currentUserId && (
                                             <div className="flex gap-1">
                                                 {m.role === 'member' && (

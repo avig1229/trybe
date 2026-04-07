@@ -68,6 +68,7 @@ export interface TribeMembership {
   tribeId: string
   userId: string
   role: TribeRole
+  joinStatus: 'pending' | 'approved' | 'rejected'
   joinedAt: Date
   tribe?: Tribe
   user?: Profile
