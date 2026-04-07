@@ -1173,7 +1173,7 @@ export async function kickMember(tribeId: string, userId: string): Promise<boole
     .delete()
     .eq('tribe_id', tribeId)
     .eq('user_id', userId)
-  if (error) { console.error('Error kicking member:', error); return false }
+  if (error) { console.error('Error kicking member:', error.message, error.code, error.details); return false }
   return true
 }
 
