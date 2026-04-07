@@ -331,12 +331,12 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Error fetching user tribes:', error)
+    console.error('Error fetching user tribes:', error.message, error.code, error.details)
     return []
   }
 
   return (data || [])
-    .filter((membership: any) => membership.tribe !== null && membership.join_status === 'approved')
+    .filter((membership: any) => membership.tribe !== null && (membership.join_status === 'approved' || membership.join_status == null))
     .map((membership: any) => ({
       ...mapTribeFromDb(membership.tribe as DbTribe),
       creator: membership.tribe.creator?.[0] || membership.tribe.creator,
