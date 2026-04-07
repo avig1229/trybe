@@ -1,5 +1,5 @@
 import { createClient } from './client'
-import { Profile, Project, Tribe, Post, Block, Channel, PostType, BlockType } from '@/types'
+import { Profile, Project, Tribe, Post, Block, Channel, PostType, BlockType, TribeMembership, TribeRole, TribeUnlockStatus, TribeStatus } from '@/types'
 
 const supabase = createClient()
 
@@ -108,6 +108,7 @@ function mapProfileFromDb(row: any): Profile {
     onboardingCompleted: row.onboarding_completed,
     defaultTreeColor: row.default_tree_color,
     defaultTreeConfig: row.default_tree_config,
+    isAdmin: row.is_admin ?? false,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   }
@@ -320,9 +321,9 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
   const { data, error } = await supabase
     .from('tribe_memberships')
     .select(`
-      id, role, joined_at,
+      id, role, join_status, joined_at,
       tribe:tribes(
-        id, name, slug, description, cover_image_url, icon_url, 
+        id, name, slug, description, cover_image_url, icon_url,
         creator_id, is_public, member_count, post_count, tags,
         creator:profiles(id, username, full_name, avatar_url)
       )
@@ -330,16 +331,18 @@ export async function getUserTribes(userId: string): Promise<Tribe[]> {
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Error fetching user tribes:', error)
+    console.error('Error fetching user tribes:', error.message, error.code, error.details)
     return []
   }
 
-  return (data || []).map((membership: any) => ({
-    ...mapTribeFromDb(membership.tribe as DbTribe),
-    creator: membership.tribe.creator?.[0] || membership.tribe.creator,
-    isMember: true,
-    userRole: membership.role,
-  })) as unknown as Tribe[]
+  return (data || [])
+    .filter((membership: any) => membership.tribe !== null && (membership.join_status === 'approved' || membership.join_status == null))
+    .map((membership: any) => ({
+      ...mapTribeFromDb(membership.tribe as DbTribe),
+      creator: membership.tribe.creator?.[0] || membership.tribe.creator,
+      isMember: true,
+      userRole: membership.role,
+    })) as unknown as Tribe[]
 }
 
 // Helpers to map between DB snake_case and app camelCase for Tribes
@@ -372,13 +375,15 @@ function mapTribeFromDb(row: DbTribe): Tribe {
     iconUrl: row.icon_url || undefined,
     creatorId: row.creator_id,
     isPublic: row.is_public,
+    status: (row.status as TribeStatus) || 'active',
+    rejectionReason: (row.rejection_reason as string | undefined) || undefined,
+    color: (row.color as string) || '#6366f1',
     memberCount: row.member_count,
     postCount: row.post_count,
     tags: row.tags || undefined,
     rules: row.rules || undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    // Relations to be populated separately or casted
   }
 }
 
@@ -394,13 +399,14 @@ function mapTribeToDb(t: Partial<Tribe>): Partial<DbTribe> {
   if (t.isPublic !== undefined) db.is_public = t.isPublic
   if (t.tags) db.tags = t.tags
   if (t.rules) db.rules = t.rules
+  if (t.color) db.color = t.color
   return db
 }
 
 export async function createTribe(tribe: Partial<Tribe>): Promise<Tribe | null> {
   const { data, error } = await supabase
     .from('tribes')
-    .insert(mapTribeToDb(tribe))
+    .insert({ ...mapTribeToDb(tribe), status: 'active' })
     .select(`
       *,
       creator:profiles(*)
@@ -419,20 +425,86 @@ export async function createTribe(tribe: Partial<Tribe>): Promise<Tribe | null> 
   } as Tribe
 }
 
-export async function joinTribe(userId: string, tribeId: string): Promise<boolean> {
+export async function joinTribe(userId: string, tribeId: string): Promise<'approved' | 'pending' | false> {
+  // Check if tribe is public to determine approval flow
+  const { data: tribeData } = await supabase
+    .from('tribes')
+    .select('is_public')
+    .eq('id', tribeId)
+    .single()
+
+  const joinStatus = tribeData?.is_public ? 'approved' : 'pending'
+
   const { error } = await supabase
     .from('tribe_memberships')
     .insert({
       user_id: userId,
       tribe_id: tribeId,
-      role: 'member'
+      role: 'member',
+      join_status: joinStatus,
     })
 
   if (error) {
+    if (error.code === '23505') return joinStatus // already requested
     console.error('Error joining tribe:', error)
     return false
   }
 
+  return joinStatus
+}
+
+export async function getPendingJoinRequests(tribeId: string): Promise<TribeMembership[]> {
+  const { data, error } = await supabase
+    .from('tribe_memberships')
+    .select(`
+      id, tribe_id, user_id, role, join_status, joined_at,
+      user:profiles(id, username, full_name, avatar_url, bio)
+    `)
+    .eq('tribe_id', tribeId)
+    .eq('join_status', 'pending')
+    .order('joined_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching pending join requests:', error)
+    return []
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    tribeId: row.tribe_id,
+    userId: row.user_id,
+    role: row.role as TribeRole,
+    joinStatus: row.join_status,
+    joinedAt: new Date(row.joined_at),
+    user: row.user ? mapProfileFromDb(row.user) : undefined,
+  }))
+}
+
+export async function approveJoinRequest(tribeId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .update({ join_status: 'approved' })
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+
+  if (error) { console.error('Error approving join request:', error); return false }
+
+  // Increment member count
+  await supabase.rpc('increment_member_count', { tribe_id: tribeId }).catch(() => {
+    supabase.from('tribes').update({ member_count: supabase.rpc('increment', {}) }).eq('id', tribeId)
+  })
+
+  return true
+}
+
+export async function rejectJoinRequest(tribeId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .update({ join_status: 'rejected' })
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+
+  if (error) { console.error('Error rejecting join request:', error); return false }
   return true
 }
 
@@ -888,6 +960,281 @@ export async function createBlock(block: Partial<Block>): Promise<Block | null> 
   }
 
   return mapBlockFromDb(data as DbBlock)
+}
+
+// Extended Tribe queries
+
+export async function getTribeBySlug(slug: string, currentUserId?: string): Promise<Tribe | null> {
+  const { data, error } = await supabase
+    .from('tribes')
+    .select(`
+      id, name, slug, description, cover_image_url, icon_url,
+      creator_id, is_public, status, rejection_reason, color,
+      member_count, post_count, tags, rules, created_at, updated_at,
+      creator:profiles(id, username, full_name, avatar_url)
+    `)
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error fetching tribe by slug:', error)
+    return null
+  }
+  if (!data) return null
+
+  // Check membership if user is logged in
+  let isMember = false
+  let userRole: 'member' | 'moderator' | 'admin' | undefined
+  if (currentUserId) {
+    const { data: mem } = await supabase
+      .from('tribe_memberships')
+      .select('role')
+      .eq('tribe_id', data.id)
+      .eq('user_id', currentUserId)
+      .maybeSingle()
+    if (mem) { isMember = true; userRole = mem.role as typeof userRole }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any
+  return {
+    ...mapTribeFromDb(row as DbTribe),
+    creator: row.creator,
+    isMember,
+    userRole,
+  } as Tribe
+}
+
+export async function getTribeMembers(tribeId: string): Promise<TribeMembership[]> {
+  const { data, error } = await supabase
+    .from('tribe_memberships')
+    .select(`
+      id, tribe_id, user_id, role, join_status, joined_at,
+      user:profiles(id, username, full_name, avatar_url, bio)
+    `)
+    .eq('tribe_id', tribeId)
+    .eq('join_status', 'approved')
+    .order('joined_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching tribe members:', error)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    tribeId: row.tribe_id,
+    userId: row.user_id,
+    role: row.role as TribeRole,
+    joinStatus: row.join_status,
+    joinedAt: new Date(row.joined_at),
+    user: row.user ? mapProfileFromDb(row.user) : undefined,
+  }))
+}
+
+export async function getTribePosts(tribeId: string, limit = 50, offset = 0): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      id, user_id, project_id, tribe_id, type, title, content,
+      media_url, media_type, thumbnail_url, is_featured, view_count,
+      created_at, updated_at,
+      user:profiles(id, username, full_name, avatar_url),
+      project:projects(id, name, color, status),
+      likes:likes(count),
+      comments:comments(count)
+    `)
+    .eq('tribe_id', tribeId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    console.error('Error fetching tribe posts:', error)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((row: any) => ({
+    ...mapPostFromDb(row as DbPost),
+    likeCount: row.likes?.[0]?.count || 0,
+    commentCount: row.comments?.[0]?.count || 0,
+  }))
+}
+
+export async function getTribeProjects(tribeId: string): Promise<Project[]> {
+  // Try junction table first (supports multiple tribes per project)
+  const { data: junctionData, error: junctionError } = await supabase
+    .from('project_tribes')
+    .select(`
+      project:projects(
+        id, user_id, name, description, color, status, is_public, tags,
+        cover_image_url, tribe_id, garden_x, garden_y, tree_config,
+        created_at, updated_at,
+        profiles(id, username, full_name, avatar_url, default_tree_color, default_tree_config)
+      )
+    `)
+    .eq('tribe_id', tribeId)
+
+  if (!junctionError && junctionData) {
+    return (junctionData || [])
+      .map((row: any) => row.project)
+      .filter(Boolean)
+      .map((p: any) => mapProjectFromDb({ ...p, profiles: p.profiles?.[0] || p.profiles } as DbProject))
+  }
+
+  // Fallback: query by tribe_id column directly
+  const { data, error } = await supabase
+    .from('projects')
+    .select(`
+      id, user_id, name, description, color, status, is_public, tags,
+      cover_image_url, tribe_id, garden_x, garden_y, tree_config,
+      created_at, updated_at,
+      profiles(id, username, full_name, avatar_url)
+    `)
+    .eq('tribe_id', tribeId)
+    .eq('is_public', true)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching tribe projects:', error)
+    return []
+  }
+
+  return ((data || []) as DbProject[]).map(mapProjectFromDb)
+}
+
+export async function assignProjectToTribe(projectId: string, tribeId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('project_tribes')
+    .insert({ project_id: projectId, tribe_id: tribeId })
+
+  if (error) {
+    if (error.code === '23505') return true // already assigned, not an error
+    console.error('Error assigning project to tribe:', error)
+    return false
+  }
+
+  return true
+}
+
+export async function removeProjectFromTribe(projectId: string, tribeId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('project_tribes')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('tribe_id', tribeId)
+
+  if (error) {
+    console.error('Error removing project from tribe:', error)
+    return false
+  }
+
+  return true
+}
+
+export async function updateTribe(tribeId: string, updates: Partial<Tribe>): Promise<Tribe | null> {
+  const { data, error } = await supabase
+    .from('tribes')
+    .update(mapTribeToDb(updates))
+    .eq('id', tribeId)
+    .select(`*, creator:profiles(id, username, full_name, avatar_url)`)
+    .single()
+
+  if (error) {
+    console.error('Error updating tribe:', error)
+    return null
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any
+  return { ...mapTribeFromDb(row), creator: row.creator } as Tribe
+}
+
+export async function deleteTribe(tribeId: string): Promise<boolean> {
+  const { error } = await supabase.from('tribes').delete().eq('id', tribeId)
+  if (error) { console.error('Error deleting tribe:', error); return false }
+  return true
+}
+
+export async function promoteMember(tribeId: string, userId: string, role: TribeRole): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .update({ role })
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+  if (error) { console.error('Error updating member role:', error); return false }
+  return true
+}
+
+export async function kickMember(tribeId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribe_memberships')
+    .delete()
+    .eq('tribe_id', tribeId)
+    .eq('user_id', userId)
+  if (error) { console.error('Error kicking member:', error.message, error.code, error.details); return false }
+  return true
+}
+
+export async function getTribeUnlockStatus(userId: string): Promise<TribeUnlockStatus> {
+  const { data, error } = await supabase
+    .rpc('get_tribe_unlock_status', { p_user_id: userId })
+
+  if (error) {
+    console.error('Error fetching unlock status:', error)
+    return { streakCount: 0, mediaCount: 0, streakRequired: 7, mediaRequired: 10, isUnlocked: false }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any
+  return {
+    streakCount: d.streak_count ?? 0,
+    mediaCount: d.media_count ?? 0,
+    streakRequired: d.streak_required ?? 7,
+    mediaRequired: d.media_required ?? 10,
+    isUnlocked: d.is_unlocked ?? false,
+  }
+}
+
+// Admin-only tribe management
+export async function getPendingTribes(): Promise<Tribe[]> {
+  const { data, error } = await supabase
+    .from('tribes')
+    .select(`
+      id, name, slug, description, cover_image_url, icon_url,
+      creator_id, is_public, status, rejection_reason, color,
+      member_count, post_count, tags, rules, created_at, updated_at,
+      creator:profiles(id, username, full_name, avatar_url)
+    `)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  if (error) { console.error('Error fetching pending tribes:', error); return [] }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((row: any) => ({
+    ...mapTribeFromDb(row as DbTribe),
+    creator: row.creator,
+  })) as Tribe[]
+}
+
+export async function approveTribe(tribeId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribes')
+    .update({ status: 'active', rejection_reason: null })
+    .eq('id', tribeId)
+  if (error) { console.error('Error approving tribe:', error); return false }
+  return true
+}
+
+export async function rejectTribe(tribeId: string, reason: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('tribes')
+    .update({ status: 'rejected', rejection_reason: reason })
+    .eq('id', tribeId)
+  if (error) { console.error('Error rejecting tribe:', error); return false }
+  return true
 }
 
 // Search functions

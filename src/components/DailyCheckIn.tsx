@@ -55,6 +55,18 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
         loadProjects()
     }, [user])
 
+    // Strip non-ASCII and unsafe characters from filenames so Supabase Storage
+    // doesn't reject keys with Chinese characters, spaces, etc.
+    const sanitizeFileName = (name: string): string => {
+        const ext = name.includes('.') ? name.split('.').pop() : ''
+        const base = name
+            .replace(/[^\x00-\x7F]/g, '')   // remove non-ASCII
+            .replace(/\s+/g, '-')            // spaces → hyphens
+            .replace(/[^a-zA-Z0-9._-]/g, '') // remove anything else unsafe
+            .replace(/-+/g, '-')             // collapse repeated hyphens
+            .replace(/^-|-$/g, '')           // trim leading/trailing hyphens
+        return (base || 'upload') + (ext ? `.${ext}` : '')
+    }
     const startBackgroundUpload = (file: File) => {
         if (!user) return
 
@@ -63,7 +75,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
 
         const promise = uploadFile({
             bucket: 'project-files',
-            path: `daily/${user.id}/${Date.now()}-${file.name}`,
+            path: `daily/${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`,
             file: file,
             onProgress: (progress) => setUploadProgress(progress)
         })
@@ -329,7 +341,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                         // Start new upload (fallback)
                                         result = await uploadFile({
                                             bucket: 'project-files',
-                                            path: `daily/${user!.id}/${Date.now()}-${videoFile!.name}`,
+                                            path: `daily/${user!.id}/${Date.now()}-${sanitizeFileName(videoFile!.name)}`,
                                             file: videoFile!
                                         })
                                     }

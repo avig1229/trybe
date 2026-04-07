@@ -10,16 +10,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Activity,
   Mountain,
+  Users2,
   Sun,
   Moon,
-  Plus
+  Plus,
+  ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { View } from '@/types'
 
 interface NavigationProps {
   currentView: View
-  onViewChange: (view: View) => void
+  onViewChange?: (view: View) => void
   onCreate?: () => void
 }
 
@@ -30,8 +32,9 @@ export function Navigation({ currentView, onViewChange, onCreate }: NavigationPr
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const navigationItems = [
-    { id: 'pulse' as View, label: 'Forest', icon: Activity },
-    { id: 'valley' as View, label: 'Valley', icon: Mountain },
+    { id: 'pulse' as View, label: 'Forest', icon: Activity, href: '/valley?view=pulse' },
+    { id: 'valley' as View, label: 'Valley', icon: Mountain, href: '/valley?view=valley' },
+    { id: 'tribes' as View, label: 'Tribes', icon: Users2, href: '/tribes' },
   ]
 
   const handleSignOut = async () => {
@@ -77,7 +80,10 @@ export function Navigation({ currentView, onViewChange, onCreate }: NavigationPr
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onViewChange(item.id)}
+                    onClick={() => {
+                      if (item.href) router.push(item.href)
+                      if (onViewChange) onViewChange(item.id)
+                    }}
                     className={cn(
                       "text-xs font-bold tracking-[0.2em] uppercase transition-all px-2 py-1",
                       isActive ? "bg-black text-white dark:bg-white dark:text-black" : "opacity-50 hover:opacity-100"
@@ -150,6 +156,15 @@ export function Navigation({ currentView, onViewChange, onCreate }: NavigationPr
                     Settings
                   </button>
 
+                  {profile?.isAdmin && (
+                    <button
+                      className="w-full text-left px-4 py-3 text-xs uppercase tracking-widest flex items-center gap-2 hover-invert transition-all"
+                      onClick={() => { setShowUserMenu(false); router.push('/admin/tribes') }}
+                    >
+                      <ShieldCheck className="h-3 w-3 opacity-70" /> Admin
+                    </button>
+                  )}
+
                   <button
                     className="w-full text-left px-4 py-3 text-xs uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-all"
                     onClick={handleSignOut}
@@ -170,7 +185,7 @@ export function Navigation({ currentView, onViewChange, onCreate }: NavigationPr
               return (
                 <button
                   key={item.id}
-                  onClick={() => onViewChange(item.id)}
+                  onClick={() => onViewChange && onViewChange(item.id)}
                   className={cn(
                     "text-xs font-medium tracking-[0.2em] uppercase whitespace-nowrap transition-opacity",
                     isActive ? "opacity-100" : "opacity-40"
