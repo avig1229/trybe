@@ -93,29 +93,40 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
 
     const handleFileSelect = (file: File) => {
         setError(null)
-        if (file.type.indexOf('video') === -1) {
-            setError('Please upload a video file.')
+        const isImage = file.type.startsWith('image/')
+        const isVideo = file.type.startsWith('video/')
+
+        if (!isImage && !isVideo) {
+            setError('Please upload a video or image file.')
             return
         }
 
-        // Create a temporary URL to check duration and preview
+        if (file.size > 50 * 1024 * 1024) {
+            setError('File is too large. Maximum 50MB.')
+            return
+        }
+
+        if (isImage) {
+            const url = URL.createObjectURL(file)
+            setVideoFile(file)
+            setVideoPreview(url)
+            setDuration(0)
+            startBackgroundUpload(file)
+            return
+        }
+
+        // Video: check duration
         const url = URL.createObjectURL(file)
         const video = document.createElement('video')
         video.preload = 'metadata'
         video.onloadedmetadata = () => {
-            // Don't revoke yet, we use it for preview
             setDuration(video.duration)
             setVideoFile(file)
             setVideoPreview(url)
 
-            if (file.size > 50 * 1024 * 1024) {
-                setError('Video is too large. Maximum 50MB.')
-            } else if (video.duration < 13.5) {
-                setError('Video is too short. Minimum 13.5 seconds.')
-            } else if (video.duration > 26.5) {
-                setError('Video is too long. Maximum 26.5 seconds.')
+            if (video.duration > 30) {
+                setError('Video is too long. Maximum 30 seconds.')
             } else {
-                // Valid video, start background upload
                 startBackgroundUpload(file)
             }
         }
@@ -133,7 +144,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                 title: title || `Daily Update - ${new Date().toLocaleDateString()}`,
                 content: description || 'Daily check-in completed.',
                 mediaUrl: result.url,
-                mediaType: 'video',
+                mediaType: videoFile?.type.startsWith('image/') ? 'image' : 'video',
                 isFeatured: false
             })
 
@@ -155,7 +166,8 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
         )
     }
 
-    const isValidDuration = duration >= 13.5 && duration <= 26.5
+    const isImageFile = videoFile?.type.startsWith('image/') ?? false
+    const isValidDuration = isImageFile || (duration > 0 && duration <= 30)
     const canPost = isValidDuration && videoFile && !uploading && title.trim()
 
     return (
@@ -175,8 +187,8 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 </h1>
                                 <p className="text-sm font-light text-neutral-400">
                                     {isFirstTime
-                                        ? 'Welcome! Upload a 15s (+/- 1.5s) video pitch for your project. This "LoCommit" will be featured as the preview for your project in the Forest to attract collaborators and feedback.'
-                                        : 'Unlock your workspace. 15s (+/- 1.5s) update.'}
+                                        ? 'Welcome! Upload a photo or short video (max 30s) pitch for your project. This "LoCommit" will be featured as the preview for your project in the Forest to attract collaborators and feedback.'
+                                        : 'Unlock your workspace. Upload a photo or short video (max 30s).'}
                                 </p>
                             </div>
                         </div>
@@ -245,7 +257,7 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-neutral-500 hover:bg-neutral-800/50 transition-colors cursor-pointer">
                                 <input
                                     type="file"
-                                    accept="video/*"
+                                    accept="video/*,image/*"
                                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0]
@@ -255,28 +267,40 @@ export default function DailyCheckIn({ onUnlock }: { onUnlock: () => void }) {
                                 <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <Upload className="h-6 w-6 text-white" />
                                 </div>
-                                <span className="text-xs uppercase tracking-widest font-bold">{isFirstTime ? 'Upload Pitch' : 'Upload Reel'}</span>
-                                <span className="text-[10px] mt-2 opacity-50">9:16 Vertical Video</span>
-                                <span className="text-[10px] opacity-50">~15s Video Pitch</span>
+                                <span className="text-xs uppercase tracking-widest font-bold">{isFirstTime ? 'Upload Pitch' : 'Upload Update'}</span>
+                                <span className="text-[10px] mt-2 opacity-50">Photo or Video</span>
+                                <span className="text-[10px] opacity-50">Max 30s for video</span>
                             </div>
                         ) : (
                             <>
-                                <video
-                                    src={videoPreview!}
-                                    className="w-full h-full object-cover"
-                                    autoPlay
-                                    muted
-                                    loop
-                                    preload="metadata"
-                                    playsInline
-                                />
+                                {isImageFile ? (
+                                    <img
+                                        src={videoPreview!}
+                                        className="w-full h-full object-cover"
+                                        alt="Upload preview"
+                                    />
+                                ) : (
+                                    <video
+                                        src={videoPreview!}
+                                        className="w-full h-full object-cover"
+                                        autoPlay
+                                        muted
+                                        loop
+                                        preload="metadata"
+                                        playsInline
+                                    />
+                                )}
                                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none" />
 
                                 {/* Overlay Info */}
                                 <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <div className={`w-2 h-2 rounded-full ${isValidDuration ? 'bg-green-500' : 'bg-red-500'}`} />
-                                        <span className="text-xs font-medium">{duration.toFixed(1)}s</span>
+                                        {!isImageFile && (
+                                            <>
+                                                <div className={`w-2 h-2 rounded-full ${isValidDuration ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                <span className="text-xs font-medium">{duration.toFixed(1)}s</span>
+                                            </>
+                                        )}
                                         {uploadProgress > 0 && uploadProgress < 100 && (
                                             <span className="text-[10px] text-neutral-400 ml-2">
                                                 Uploading: {Math.round(uploadProgress)}%
